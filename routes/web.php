@@ -22,6 +22,7 @@ Route::group([
     Route::get('/', Dashboard::class)->name('dashboard.index');
     Route::get('/projects', App\Livewire\Project\Index::class)->name('projects.index');
     Route::get('/projects/{id}', App\Livewire\Project\Show::class)->name('projects.show');
+    Route::get('/team', App\Livewire\Team\Index::class)->name('team.index');
 });
 
 Route::middleware(['auth'])->group(function () {

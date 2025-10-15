@@ -14,8 +14,11 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard.index')" :current="request()->routeIs('dashboard.index')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item icon="folder-git-2" :href="route('projects.index')" :current="request()->routeIs('projects.index')" wire:navigate>
+                    <flux:navlist.item icon="folder-git-2" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
                         {{ __('Projects') }}
+                    </flux:navlist.item>
+                    <flux:navlist.item icon="user-group" :href="route('team.index')" :current="request()->routeIs('team.*')" wire:navigate>
+                        {{ __('Team Members') }}
                     </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>

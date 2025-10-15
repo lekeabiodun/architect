@@ -9,7 +9,7 @@ nixPkgs = [
 
 [phases.install]
 commands = [
-  "composer global config http-basic.composer.fluxui.dev $FLUX_COMPOSER_EMAIL $FLUX_COMPOSER_KEY",
+  "if [ -n \"$FLUX_COMPOSER_EMAIL\" ] && [ -n \"$FLUX_COMPOSER_KEY\" ]; then composer global config --auth http-basic.composer.fluxui.dev $FLUX_COMPOSER_EMAIL $FLUX_COMPOSER_KEY; fi",
   "composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader",
   "npm install"
 ]

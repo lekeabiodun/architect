@@ -40,7 +40,7 @@
                 <flux:card>
                     <div class="flex items-center justify-between">
                         <div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">Completed</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Completed Tasks</div>
                             <div class="text-2xl font-bold">{{ \App\Models\Task::where('status', 'completed')->count() }}</div>
                         </div>
                         <flux:icon.check-circle class="w-8 h-8 text-orange-500" />

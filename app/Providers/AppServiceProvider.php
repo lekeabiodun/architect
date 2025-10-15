@@ -19,6 +19,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (config('app.env') === 'production') {
+            $parsedUrl = parse_url(config('app.url'));
+
+            if (($parsedUrl['scheme'] ?? null) === 'https') {
+                \Illuminate\Support\Facades\URL::forceScheme('https');
+            }
+        }
     }
 }

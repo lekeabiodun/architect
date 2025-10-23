@@ -24,7 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'create projects',
             'edit projects',
             'delete projects',
-            
+
             // Task permissions
             'view tasks',
             'create tasks',
@@ -32,12 +32,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete tasks',
             'assign tasks',
             'complete tasks',
-            
+
             // Inspection permissions
             'inspect tasks',
             'approve inspections',
             'fail inspections',
-            
+
             // Material permissions
             'view materials',
             'manage materials',
@@ -45,25 +45,25 @@ class RolesAndPermissionsSeeder extends Seeder
             'approve material requests',
             'disburse materials',
             'confirm material delivery',
-            
+
             // Inventory permissions
             'view inventory',
             'manage inventory',
             'allocate materials',
-            
+
             // Budget permissions
             'view budget',
             'manage budget',
-            
+
             // Team permissions
             'manage team members',
             'view team members',
-            
+
             // Document permissions
             'upload documents',
             'view documents',
             'delete documents',
-            
+
             // Comment permissions
             'add comments',
             'view comments',
@@ -74,7 +74,7 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // Create roles and assign permissions
-        
+
         // 1. Super Admin - Full access
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
         $superAdmin->givePermissionTo(Permission::all());

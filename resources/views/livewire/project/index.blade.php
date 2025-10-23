@@ -3,7 +3,9 @@
         <div class="w-full space-y-4">
             <div class="flex items-center justify-between">
                 <flux:heading size="lg">Projects</flux:heading>
-                <flux:button variant="primary" wire:click="openCreateModal" icon="plus">New Project</flux:button>
+                @if(auth()->user()->can('create projects'))
+                    <flux:button variant="primary" wire:click="openCreateModal" icon="plus">New Project</flux:button>
+                @endif
             </div>
 
             <div class="w-full grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -13,15 +15,15 @@
                 </flux:card>
                 <flux:card>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Active</div>
-                    <div class="font-semibold text-2xl text-green-600">{{ \App\Models\Project::where('status', 'active')->count() }}</div>
+                    <div class="font-semibold text-2xl text-green-600">{{ $projects->where('status', 'active')->count() }}</div>
                 </flux:card>
                 <flux:card>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Completed</div>
-                    <div class="font-semibold text-2xl text-blue-600">{{ \App\Models\Project::where('status', 'completed')->count() }}</div>
+                    <div class="font-semibold text-2xl text-blue-600">{{ $projects->where('status', 'completed')->count() }}</div>
                 </flux:card>
                 <flux:card>
                     <div class="text-sm text-gray-500 dark:text-gray-400">On Hold</div>
-                    <div class="font-semibold text-2xl text-yellow-600">{{ \App\Models\Project::where('status', 'on_hold')->count() }}</div>
+                    <div class="font-semibold text-2xl text-yellow-600">{{ $projects->where('status', 'on_hold')->count() }}</div>
                 </flux:card>
             </div>
         </div>
@@ -70,6 +72,7 @@
                                 </a>
                                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ $project->client_name }}</p>
                             </div>
+                            @can('update', $project)
                             <flux:dropdown align="end">
                                 <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" icon-variant="mini" />
                                 
@@ -78,6 +81,7 @@
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deleteProject({{ $project->id }})" wire:confirm="Are you sure you want to delete this project?">Delete</flux:menu.item>
                                 </flux:menu>
                             </flux:dropdown>
+                            @endcan
                         </div>
 
                         {{-- Description --}}
@@ -143,7 +147,9 @@
                         <flux:icon.folder-open class="w-12 h-12 mx-auto text-gray-400 mb-4" />
                         <flux:heading size="lg" class="mb-2">No projects found</flux:heading>
                         <p class="text-gray-500 mb-4">Get started by creating your first project</p>
-                        <flux:button variant="primary" wire:click="openCreateModal" icon="plus">Create Project</flux:button>
+                        @if(auth()->user()->can('create projects'))
+                            <flux:button variant="primary" wire:click="openCreateModal" icon="plus">Create Project</flux:button>
+                        @endif
                     </flux:card>
                 </div>
             @endforelse

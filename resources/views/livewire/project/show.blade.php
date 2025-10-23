@@ -6,13 +6,15 @@
                     <flux:button variant="ghost" icon="arrow-left" href="{{ route('projects.index') }}">Back</flux:button>
                     <flux:heading size="lg">{{ $project->name }}</flux:heading>
                 </div>
+                @can('update', $project)
                 <flux:button variant="primary" wire:click="openPhaseModal" icon="plus">Add Phase</flux:button>
+                @endcan
             </div>
 
             <div class="w-full grid grid-cols-1 md:grid-cols-4 gap-4">
                 <flux:card>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Client</div>
-                    <div class="font-semibold">{{ $project->client_name }}</div>
+                    <div class="font-semibold">{{ $project->client->name }}</div>
                 </flux:card>
                 <flux:card>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Status</div>
@@ -92,6 +94,7 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $phase->description }}</p>
                                 @endif
                             </div>
+                            @can('update', $project)
                             <flux:dropdown align="end">
                                 <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" icon-variant="mini" />
                                 <flux:menu>
@@ -100,6 +103,7 @@
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deletePhase({{ $phase->id }})" wire:confirm="Delete this phase and all its tasks?">Delete Phase</flux:menu.item>
                                 </flux:menu>
                             </flux:dropdown>
+                            @endcan
                         </div>
 
                         {{-- Phase Progress --}}
@@ -119,6 +123,7 @@
                                 @foreach($phase->tasks as $task)
                                     <div class="flex items-center gap-3 p-3 rounded-lg border {{ $task->status === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700' }} hover:shadow-md transition-all">
                                         {{-- Status Circle (Clickable) --}}
+                                        @can('update', $project)
                                         <button 
                                             wire:click="toggleTaskStatus({{ $task->id }})"
                                             class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110
@@ -131,6 +136,7 @@
                                                 <div class="w-2 h-2 bg-white rounded-full"></div>
                                             @endif
                                         </button>
+                                        @endcan
 
                                         {{-- Task Details --}}
                                         <div class="flex-1 min-w-0">
@@ -168,6 +174,7 @@
                                         </div>
 
                                         {{-- Actions --}}
+                                        @can('update', $project)
                                         <flux:dropdown align="end">
                                             <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" icon-variant="mini" />
                                             <flux:menu>
@@ -175,6 +182,7 @@
                                                 <flux:menu.item icon="trash" variant="danger" wire:click="deleteTask({{ $task->id }})" wire:confirm="Delete this task?">Delete</flux:menu.item>
                                             </flux:menu>
                                         </flux:dropdown>
+                                        @endcan
                                     </div>
                                 @endforeach
                             </div>

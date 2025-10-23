@@ -15,26 +15,29 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('client_name');
             $table->string('location')->nullable();
             $table->string('status')->default('active'); // active, on_hold, completed, cancelled
-            
+
             // Dates
             $table->date('planned_start_date')->nullable();
             $table->date('planned_end_date')->nullable();
             $table->date('actual_start_date')->nullable();
             $table->date('actual_end_date')->nullable();
-            
+
             // Budget
             $table->decimal('estimated_budget', 15, 2)->nullable();
             $table->decimal('actual_cost', 15, 2)->default(0);
-            
+
             // Progress
             $table->decimal('overall_progress', 5, 2)->default(0); // 0-100%
-            
+
             // Owner/Manager
             $table->foreignId('manager_id')->nullable()->constrained('users')->onDelete('set null');
-            
+            $table->foreignId('client_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('inspector_id')->nullable()->constrained('users')->onDelete('set null');
+
+            $table->string('currency', 3)->default('USD');
+
             $table->timestamps();
             $table->softDeletes();
         });

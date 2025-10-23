@@ -68,6 +68,11 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     /**
      * Get the predecessor task (dependency)
      */
@@ -129,7 +134,7 @@ class Task extends Model
      */
     public function toggleStatus(): void
     {
-        $this->status = match($this->status) {
+        $this->status = match ($this->status) {
             'pending' => 'in_progress',
             'in_progress' => 'completed',
             'completed' => 'pending',
@@ -169,7 +174,7 @@ class Task extends Model
         if (!$this->estimated_cost) {
             return 0;
         }
-        
+
         return $this->estimated_cost - $this->actual_cost;
     }
 
@@ -214,8 +219,8 @@ class Task extends Model
      */
     public function requiresInspection(): bool
     {
-        return $this->status === 'completed' && 
-               in_array($this->inspection_status, ['pending', 're_inspection', null]);
+        return $this->status === 'completed' &&
+            in_array($this->inspection_status, ['pending', 're_inspection', null]);
     }
 
     /**
@@ -223,7 +228,12 @@ class Task extends Model
      */
     public function isFullyApproved(): bool
     {
-        return $this->status === 'completed' && 
-               $this->inspection_status === 'passed';
+        return $this->status === 'completed' &&
+            $this->inspection_status === 'passed';
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 }

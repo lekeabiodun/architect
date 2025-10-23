@@ -13,47 +13,49 @@
 
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard.index')" :current="request()->routeIs('dashboard.index')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    @can('viewDashboard', App\Models\User::class)
+                        <flux:navlist.item icon="home" :href="route('dashboard.index')" :current="request()->routeIs('dashboard.index')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    @endcan
                     
-                    @if(!auth()->user()->isWorker())
+                    @can('viewProjects', App\Models\User::class)
                         <flux:navlist.item icon="folder-git-2" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
                             {{ __('Projects') }}
                         </flux:navlist.item>
-                    @endif
+                    @endcan
                     
-                    @if(auth()->user()->isWorker())
+                    @can('viewMyTasks', App\Models\User::class)
                         <flux:navlist.item icon="clipboard-document-list" :href="route('tasks.my-tasks')" :current="request()->routeIs('tasks.my-tasks')" wire:navigate>
                             {{ __('My Tasks') }}
                         </flux:navlist.item>
-                    @endif
+                    @endcan
 
-                    @if(auth()->user()->canViewMaterials())
+                    @can('viewMaterials', App\Models\User::class)
                         <flux:navlist.item icon="cube" :href="route('materials.index')" :current="request()->routeIs('materials.*')" wire:navigate>
                             {{ __('Materials') }}
                         </flux:navlist.item>
-                    @endif
+                    @endcan
 
-                    @if(!auth()->user()->isClient() && !auth()->user()->isWorker())
+                    @can('viewMaterialRequests', App\Models\User::class)
                         <flux:navlist.item icon="inbox-stack" :href="route('material-requests.index')" :current="request()->routeIs('material-requests.*')" wire:navigate>
                             {{ __('Material Requests') }}
                         </flux:navlist.item>
-                    @endif
+                    @endcan
 
-                    @if(auth()->user()->canInspectTasks())
+                    @can('inspectTasks', App\Models\User::class)
                         <flux:navlist.item icon="check-badge" :href="route('inspector.dashboard')" :current="request()->routeIs('inspector.*')" wire:navigate>
                             {{ __('Inspections') }}
                         </flux:navlist.item>
-                    @endif
+                    @endcan
 
-                    @if(!auth()->user()->isClient() && !auth()->user()->isWorker())
+                    @can('viewTeamMembers', App\Models\User::class)
                         <flux:navlist.item icon="user-group" :href="route('team.index')" :current="request()->routeIs('team.*')" wire:navigate>
                             {{ __('Team Members') }}
                         </flux:navlist.item>
-                    @endif
+                    @endcan
                 </flux:navlist.group>
 
                 {{-- Admin Settings (Super Admin only) --}}
-                @if(auth()->user()->isSuperAdmin())
+                @can('viewAdminSettings', App\Models\User::class)
                     <flux:navlist.group :heading="__('Administration')" class="grid">
                         <flux:navlist.item icon="shield-check" :href="route('settings.roles-permissions')" :current="request()->routeIs('settings.roles-permissions')" wire:navigate>
                             {{ __('Roles & Permissions') }}
@@ -62,7 +64,7 @@
                             {{ __('User Role Management') }}
                         </flux:navlist.item>
                     </flux:navlist.group>
-                @endif
+                @endcan
             </flux:navlist>
 
             <flux:spacer />

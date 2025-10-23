@@ -36,7 +36,8 @@ class ProjectPolicy
 
         // Clients can only view their own projects
         if ($user->isClient()) {
-            return $project->users()->where('user_id', $user->id)->exists();
+            return $project->users()->where('user_id', $user->id)->exists() ||
+                   ($project->client && $project->client->user_id === $user->id);
         }
 
         // Workers cannot view full project details
@@ -44,9 +45,10 @@ class ProjectPolicy
             return false;
         }
 
-        // Others can view if they're assigned to the project
+        // Others can view if they're assigned to the project, are the manager, or are the inspector
         return $project->users()->where('user_id', $user->id)->exists() ||
-            $project->manager_id === $user->id;
+            $project->manager_id === $user->id ||
+            $project->inspector_id === $user->id;
     }
 
     /**
@@ -135,5 +137,25 @@ class ProjectPolicy
         }
 
         return $this->view($user, $project) && $user->hasPermissionTo('view budget');
+    }
+
+    /**
+     * Determine whether the user can manage team members for this project.
+     */
+    public function manageTeam(User $user, Project $project): bool
+    {
+        // Super admin can manage all
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        // Project manager can manage their project team
+        if ($project->manager_id === $user->id) {
+            return true;
+        }
+
+        // Check permission and project assignment
+        return $user->hasPermissionTo('edit projects') &&
+            $project->users()->where('user_id', $user->id)->exists();
     }
 }

@@ -60,7 +60,7 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 
@@ -182,7 +182,7 @@ class User extends Authenticatable
     public function canManageMaterials(): bool
     {
         return $this->hasAnyRole(['super_admin', 'project_manager', 'director', 'manager']) ||
-               $this->hasPermissionTo('manage materials');
+            $this->hasPermissionTo('manage materials');
     }
 
     /**
@@ -209,7 +209,7 @@ class User extends Authenticatable
     public function canApproveMaterialRequests(): bool
     {
         return $this->hasAnyRole(['super_admin', 'director', 'manager', 'project_manager']) ||
-               $this->hasPermissionTo('approve material requests');
+            $this->hasPermissionTo('approve material requests');
     }
 
     /**
@@ -218,7 +218,7 @@ class User extends Authenticatable
     public function canInspectTasks(): bool
     {
         return $this->hasAnyRole(['inspector', 'super_admin']) ||
-               $this->hasPermissionTo('inspect tasks');
+            $this->hasPermissionTo('inspect tasks');
     }
 
     /**

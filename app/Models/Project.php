@@ -17,7 +17,7 @@ class Project extends Model
     protected $fillable = [
         'name',
         'description',
-        'client_name',
+        'client_id',
         'location',
         'status',
         'planned_start_date',
@@ -29,6 +29,7 @@ class Project extends Model
         'currency',
         'overall_progress',
         'manager_id',
+        'inspector_id',
     ];
 
     protected $casts = [
@@ -49,53 +50,45 @@ class Project extends Model
         return $this->belongsTo(User::class, 'manager_id');
     }
 
-    /**
-     * Get all phases for this project
-     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'client_id');
+    }
+
+    public function inspector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'inspector_id');
+    }
+
     public function phases(): HasMany
     {
         return $this->hasMany(Phase::class)->orderBy('order');
     }
 
-    /**
-     * Get all team members assigned to this project
-     */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
     }
 
-    /**
-     * Get all documents attached to this project
-     */
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
     }
 
-    /**
-     * Get all inventories for this project
-     */
     public function inventories(): HasMany
     {
         return $this->hasMany(Inventory::class);
     }
 
-    /**
-     * Get all material requests for this project
-     */
     public function materialRequests(): HasMany
     {
         return $this->hasMany(MaterialRequest::class);
     }
 
-    /**
-     * Calculate overall project progress based on phase weights
-     */
     public function calculateProgress(): float
     {
         $totalWeight = $this->phases->sum('weight');
-        
+
         if ($totalWeight == 0) {
             return 0;
         }
@@ -107,42 +100,30 @@ class Project extends Model
         return round($weightedProgress, 2);
     }
 
-    /**
-     * Update overall progress and save
-     */
     public function updateProgress(): void
     {
         $this->overall_progress = $this->calculateProgress();
         $this->save();
     }
 
-    /**
-     * Get budget variance (positive means under budget)
-     */
     public function getBudgetVarianceAttribute(): float
     {
         if (!$this->estimated_budget) {
             return 0;
         }
-        
+
         return $this->estimated_budget - $this->actual_cost;
     }
 
-    /**
-     * Get budget variance percentage
-     */
     public function getBudgetVariancePercentageAttribute(): float
     {
         if (!$this->estimated_budget || $this->estimated_budget == 0) {
             return 0;
         }
-        
+
         return (($this->estimated_budget - $this->actual_cost) / $this->estimated_budget) * 100;
     }
 
-    /**
-     * Check if project is on schedule
-     */
     public function isOnSchedule(): bool
     {
         if (!$this->planned_end_date) {
@@ -156,9 +137,6 @@ class Project extends Model
         return now() <= $this->planned_end_date;
     }
 
-    /**
-     * Calculate total task costs across all phases
-     */
     public function calculateTotalTaskCosts(): array
     {
         $estimatedCost = 0;
@@ -178,9 +156,6 @@ class Project extends Model
         ];
     }
 
-    /**
-     * Update actual cost from task aggregation
-     */
     public function updateActualCostFromTasks(): void
     {
         $costs = $this->calculateTotalTaskCosts();
@@ -188,9 +163,6 @@ class Project extends Model
         $this->save();
     }
 
-    /**
-     * Get budget utilization percentage
-     */
     public function getBudgetUtilizationAttribute(): float
     {
         if (!$this->estimated_budget || $this->estimated_budget == 0) {

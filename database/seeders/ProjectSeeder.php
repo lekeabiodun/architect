@@ -56,24 +56,26 @@ class ProjectSeeder extends Seeder
             ]
         );
 
+        $client->assignRole('client');
+
         // Create sample project
         $project = Project::create([
             'name' => 'Luxury Villa Construction',
             'description' => 'A 5-bedroom luxury villa with modern amenities',
-            'client_name' => 'Jane Client',
+            'client_id' => $client->getKey(),
             'location' => '123 Main Street, Beverly Hills, CA',
             'status' => 'active',
             'planned_start_date' => now()->subDays(30),
             'planned_end_date' => now()->addMonths(6),
             'estimated_budget' => 1500000,
-            'manager_id' => $projectManager->id,
+            'manager_id' => $projectManager->getKey(),
         ]);
 
         // Attach team members
         $project->users()->attach([
-            $contractor1->id => ['role' => 'lead_contractor'],
-            $contractor2->id => ['role' => 'contractor'],
-            $client->id => ['role' => 'client'],
+            $contractor1->getKey() => ['role' => 'lead_contractor'],
+            $contractor2->getKey() => ['role' => 'contractor'],
+            $client->getKey() => ['role' => 'client'],
         ]);
 
         // Define phases with their tasks
@@ -195,17 +197,34 @@ class ProjectSeeder extends Seeder
         // Update project progress
         $project->updateProgress();
 
+        $client2 = User::firstOrCreate(
+            ['email' => 'client2@example.com'],
+            [
+                'name' => 'John Client',
+                'password' => bcrypt('password'),
+                'role' => 'client',
+            ]
+        );
+
+        $client2->assignRole('client');
+
         // Create another project
         $project2 = Project::create([
             'name' => 'Office Building Renovation',
             'description' => '3-story office building complete renovation',
-            'client_name' => 'ABC Corporation',
+            'client_id' => $client2->getKey(),
             'location' => '456 Business Ave, Downtown',
             'status' => 'active',
             'planned_start_date' => now()->addDays(15),
             'planned_end_date' => now()->addMonths(4),
             'estimated_budget' => 800000,
-            'manager_id' => $projectManager->id,
+            'manager_id' => $projectManager->getKey(),
+        ]);
+
+        $project2->users()->attach([
+            $contractor1->getKey() => ['role' => 'lead_contractor'],
+            $contractor2->getKey() => ['role' => 'contractor'],
+            $client2->getKey() => ['role' => 'client'],
         ]);
     }
 }

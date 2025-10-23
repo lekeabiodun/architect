@@ -10,7 +10,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Active Projects</div>
-                            <div class="font-semibold text-2xl">{{ \App\Models\Project::where('status', 'active')->count() }}</div>
+                            <div class="font-semibold text-2xl">{{ $projects->where('status', 'active')->count() }}</div>
                         </div>
                         <flux:icon.folder-open class="w-8 h-8 text-blue-500" />
                     </div>
@@ -20,7 +20,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Total Tasks</div>
-                            <div class="font-semibold text-2xl">{{ \App\Models\Task::count() }}</div>
+                            <div class="font-semibold text-2xl">{{ $tasks->count() }}</div>
                         </div>
                         <flux:icon.list-bullet class="w-8 h-8 text-green-500" />
                     </div>
@@ -40,7 +40,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Completed Tasks</div>
-                            <div class="font-semibold text-2xl">{{ \App\Models\Task::where('status', 'completed')->count() }}</div>
+                            <div class="font-semibold text-2xl">{{ $tasks->where('status', 'completed')->count() }}</div>
                         </div>
                         <flux:icon.check-circle class="w-8 h-8 text-orange-500" />
                     </div>
@@ -70,7 +70,7 @@
                         </flux:table.columns>
 
                         <flux:table.rows>
-                            @forelse(\App\Models\Project::with('manager')->latest()->take(5)->get() as $project)
+                            @forelse($projects->take(5) as $project)
                                 <flux:table.row :key="$project->id">
                                     <flux:table.cell>
                                         <a href="{{ route('projects.show', $project->id) }}" class="font-medium text-blue-600 hover:underline">

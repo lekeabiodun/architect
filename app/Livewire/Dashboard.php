@@ -2,12 +2,57 @@
 
 namespace App\Livewire;
 
+use App\Models\Task;
+use App\Models\Project;
 use Livewire\Component;
+use Illuminate\Support\Facades\Auth;
 
 class Dashboard extends Component
 {
+    public function mount()
+    {
+        if (Auth::user()->isClient()) {
+            return redirect()->route('projects.index');
+        }
+
+        $this->authorize('viewDashboard', Auth::user());
+    }
     public function render()
     {
-        return view('livewire.dashboard');
+
+        $user = Auth::user();
+
+        $projects = Project::query()
+            ->with(['manager', 'client', 'inspector', 'phases'])
+            ->when(!$user->isSuperAdmin(), function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('manager_id', $user->id)
+                        ->orWhereHas('users', function ($uq) use ($user) {
+                            $uq->where('user_id', $user->id);
+                        });
+                });
+            })
+            ->paginate(12);
+
+        $tasks = Task::query()
+            ->with(['project', 'user'])
+            ->when(!$user->isSuperAdmin(), function ($query) use ($user) {
+                // Non-admins see only tasks they're assigned to or manage
+                $query->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                        ->orWhereHas('project', function ($pq) use ($user) {
+                            $pq->where('manager_id', $user->id)
+                                ->orWhereHas('users', function ($uq) use ($user) {
+                                    $uq->where('user_id', $user->id);
+                                });
+                        });
+                });
+            })
+            ->paginate(12);
+
+        return view('livewire.dashboard', [
+            'projects' => $projects,
+            'tasks' => $tasks,
+        ]);
     }
 }

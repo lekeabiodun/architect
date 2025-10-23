@@ -19,7 +19,6 @@ class Index extends Component
     // Form fields
     public $name = '';
     public $description = '';
-    public $client_name = '';
     public $client_id = '';
     public $location = '';
     public $status = 'active';
@@ -65,7 +64,6 @@ class Index extends Component
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('client_name', 'like', '%' . $this->search . '%')
                         ->orWhere('location', 'like', '%' . $this->search . '%');
                 });
             })
@@ -103,7 +101,6 @@ class Index extends Component
         $this->editingProject = $project->id;
         $this->name = $project->name;
         $this->description = $project->description ?? '';
-        $this->client_name = $project->client_name;
         $this->client_id = $project->client_id ?? '';
         $this->location = $project->location ?? '';
         $this->status = $project->status;
@@ -124,8 +121,7 @@ class Index extends Component
 
         $this->validate([
             'name' => 'required|string|max:255',
-            'client_id' => 'nullable|exists:clients,id',
-            'client_name' => 'required_without:client_id|string|max:255',
+            'client_id' => 'nullable|exists:users,id',
             'location' => 'nullable|string|max:255',
             'status' => 'required|in:active,on_hold,completed,cancelled',
             'planned_start_date' => 'nullable|date',
@@ -141,7 +137,6 @@ class Index extends Component
         $project = Project::create([
             'name' => $this->name,
             'description' => $this->description,
-            'client_name' => $this->client_name,
             'client_id' => $this->client_id ?: null,
             'location' => $this->location,
             'status' => $this->status,
@@ -176,8 +171,7 @@ class Index extends Component
 
         $this->validate([
             'name' => 'required|string|max:255',
-            'client_id' => 'nullable|exists:clients,id',
-            'client_name' => 'required_without:client_id|string|max:255',
+            'client_id' => 'nullable|exists:users,id',
             'location' => 'nullable|string|max:255',
             'status' => 'required|in:active,on_hold,completed,cancelled',
             'planned_start_date' => 'nullable|date',
@@ -193,7 +187,6 @@ class Index extends Component
         $project->update([
             'name' => $this->name,
             'description' => $this->description,
-            'client_name' => $this->client_name,
             'client_id' => $this->client_id ?: null,
             'location' => $this->location,
             'status' => $this->status,
@@ -250,7 +243,6 @@ class Index extends Component
         $this->editingProject = null;
         $this->name = '';
         $this->description = '';
-        $this->client_name = '';
         $this->client_id = '';
         $this->location = '';
         $this->status = 'active';

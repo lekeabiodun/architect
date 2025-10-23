@@ -70,7 +70,7 @@
                                 <a href="{{ route('projects.show', $project->id) }}" class="text-lg font-semibold text-blue-600 hover:underline">
                                     {{ $project->name }}
                                 </a>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $project->client_name }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $project->client->name }}</p>
                             </div>
                             @can('update', $project)
                             <flux:dropdown align="end">
@@ -175,7 +175,12 @@
                 <flux:textarea wire:model="description" label="Description" placeholder="Brief description of the project" rows="3" />
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <flux:input wire:model="client_name" label="Client Name" required />
+                    <flux:select wire:model="client_id" label="Client Name" required>
+                        <flux:select.option value="">Select Client</flux:select.option>
+                        @foreach($clients as $client)
+                            <flux:select.option value="{{ $client->id }}">{{ $client->name }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
                     <flux:input wire:model="location" label="Location" placeholder="e.g., 123 Main St" />
                 </div>
 
@@ -231,7 +236,12 @@
                 <flux:textarea wire:model="description" label="Description" placeholder="Brief description of the project" rows="3" />
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <flux:input wire:model="client_name" label="Client Name" required />
+                    <flux:select wire:model="client_id" label="Client Name" required>
+                        <flux:select.option value="">Select Client</flux:select.option>
+                        @foreach($clients as $client)
+                            <flux:select.option value="{{ $client->id }}">{{ $client->name }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
                     <flux:input wire:model="location" label="Location" placeholder="e.g., 123 Main St" />
                 </div>
 

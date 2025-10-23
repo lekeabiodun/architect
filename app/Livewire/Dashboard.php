@@ -37,14 +37,10 @@ class Dashboard extends Component
         $tasks = Task::query()
             ->with(['project', 'user'])
             ->when(!$user->isSuperAdmin(), function ($query) use ($user) {
-                // Non-admins see only tasks they're assigned to or manage
-                $query->where(function ($q) use ($user) {
-                    $q->where('user_id', $user->id)
-                        ->orWhereHas('project', function ($pq) use ($user) {
-                            $pq->where('manager_id', $user->id)
-                                ->orWhereHas('users', function ($uq) use ($user) {
-                                    $uq->where('user_id', $user->id);
-                                });
+                $query->whereHas('project', function ($pq) use ($user) {
+                    $pq->where('manager_id', $user->id)
+                        ->orWhereHas('users', function ($uq) use ($user) {
+                            $uq->where('user_id', $user->id);
                         });
                 });
             })

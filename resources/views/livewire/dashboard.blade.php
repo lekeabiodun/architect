@@ -1,17 +1,16 @@
 <div>
-    <flux:header>
-        <flux:heading size="lg">Dashboard</flux:heading>
-    </flux:header>
+    <flux:header class="space-y-4">
+        <div class="w-full space-y-4">
+            <div class="flex items-center justify-between">
+                <flux:heading size="lg">Dashboard</flux:heading>
+            </div>
 
-    <flux:main>
-        <div class="space-y-6">
-            {{-- Stats Overview --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <flux:card>
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Active Projects</div>
-                            <div class="text-2xl font-bold">{{ \App\Models\Project::where('status', 'active')->count() }}</div>
+                            <div class="font-semibold text-2xl">{{ \App\Models\Project::where('status', 'active')->count() }}</div>
                         </div>
                         <flux:icon.folder-open class="w-8 h-8 text-blue-500" />
                     </div>
@@ -21,7 +20,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Total Tasks</div>
-                            <div class="text-2xl font-bold">{{ \App\Models\Task::count() }}</div>
+                            <div class="font-semibold text-2xl">{{ \App\Models\Task::count() }}</div>
                         </div>
                         <flux:icon.list-bullet class="w-8 h-8 text-green-500" />
                     </div>
@@ -31,7 +30,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">My Tasks</div>
-                            <div class="text-2xl font-bold">{{ auth()->user()->tasks()->where('status', '!=', 'completed')->count() }}</div>
+                            <div class="font-semibold text-2xl">{{ auth()->user()->tasks()->where('status', '!=', 'completed')->count() }}</div>
                         </div>
                         <flux:icon.user class="w-8 h-8 text-purple-500" />
                     </div>
@@ -41,12 +40,17 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Completed Tasks</div>
-                            <div class="text-2xl font-bold">{{ \App\Models\Task::where('status', 'completed')->count() }}</div>
+                            <div class="font-semibold text-2xl">{{ \App\Models\Task::where('status', 'completed')->count() }}</div>
                         </div>
                         <flux:icon.check-circle class="w-8 h-8 text-orange-500" />
                     </div>
                 </flux:card>
             </div>
+        </div>
+    </flux:header>
+
+    <flux:main>
+        <div class="space-y-6">
 
             {{-- Recent Projects --}}
             <flux:card>

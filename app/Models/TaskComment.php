@@ -14,6 +14,12 @@ class TaskComment extends Model
         'task_id',
         'user_id',
         'comment',
+        'media_files',
+        'media_type',
+    ];
+
+    protected $casts = [
+        'media_files' => 'array',
     ];
 
     /**

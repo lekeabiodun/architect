@@ -26,6 +26,7 @@ class Project extends Model
         'actual_end_date',
         'estimated_budget',
         'actual_cost',
+        'currency',
         'overall_progress',
         'manager_id',
     ];
@@ -70,6 +71,22 @@ class Project extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    /**
+     * Get all inventories for this project
+     */
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(Inventory::class);
+    }
+
+    /**
+     * Get all material requests for this project
+     */
+    public function materialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class);
     }
 
     /**
@@ -137,5 +154,65 @@ class Project extends Model
         }
 
         return now() <= $this->planned_end_date;
+    }
+
+    /**
+     * Calculate total task costs across all phases
+     */
+    public function calculateTotalTaskCosts(): array
+    {
+        $estimatedCost = 0;
+        $actualCost = 0;
+
+        foreach ($this->phases as $phase) {
+            foreach ($phase->tasks as $task) {
+                $estimatedCost += $task->estimated_cost ?? 0;
+                $actualCost += $task->actual_cost ?? 0;
+            }
+        }
+
+        return [
+            'estimated' => $estimatedCost,
+            'actual' => $actualCost,
+            'variance' => $estimatedCost - $actualCost,
+        ];
+    }
+
+    /**
+     * Update actual cost from task aggregation
+     */
+    public function updateActualCostFromTasks(): void
+    {
+        $costs = $this->calculateTotalTaskCosts();
+        $this->actual_cost = $costs['actual'];
+        $this->save();
+    }
+
+    /**
+     * Get budget utilization percentage
+     */
+    public function getBudgetUtilizationAttribute(): float
+    {
+        if (!$this->estimated_budget || $this->estimated_budget == 0) {
+            return 0;
+        }
+
+        return ($this->actual_cost / $this->estimated_budget) * 100;
+    }
+
+    public function getCurrencySymbolAttribute(): string
+    {
+        return match ($this->currency) {
+            'NGN' => '₦',
+            default => '$',
+        };
+    }
+
+    public function formatCurrency(null|float|string $amount, int $decimals = 2): string
+    {
+        $value = is_numeric($amount) ? (float) $amount : 0;
+        $sign = $value < 0 ? '-' : '';
+
+        return $sign . $this->currency_symbol . number_format(abs($value), $decimals);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Livewire\Project;
 
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -25,6 +26,7 @@ class Index extends Component
     public $planned_end_date = '';
     public $estimated_budget = '';
     public $manager_id = '';
+    public $currency = 'USD';
     
     // Filters
     public $search = '';
@@ -39,7 +41,7 @@ class Index extends Component
 
     public function mount()
     {
-        $this->manager_id = auth()->id();
+        $this->manager_id = Auth::id();
     }
 
     public function render()
@@ -86,7 +88,8 @@ class Index extends Component
         $this->planned_start_date = $project->planned_start_date?->format('Y-m-d') ?? '';
         $this->planned_end_date = $project->planned_end_date?->format('Y-m-d') ?? '';
         $this->estimated_budget = $project->estimated_budget ?? '';
-        $this->manager_id = $project->manager_id ?? auth()->id();
+        $this->manager_id = $project->manager_id ?? Auth::id();
+        $this->currency = $project->currency ?? 'USD';
         
         $this->showEditModal = true;
     }
@@ -102,6 +105,7 @@ class Index extends Component
             'planned_end_date' => 'nullable|date|after_or_equal:planned_start_date',
             'estimated_budget' => 'nullable|numeric|min:0',
             'manager_id' => 'required|exists:users,id',
+            'currency' => 'required|in:USD,NGN',
         ]);
 
         Project::create([
@@ -114,6 +118,7 @@ class Index extends Component
             'planned_end_date' => $this->planned_end_date ?: null,
             'estimated_budget' => $this->estimated_budget ?: null,
             'manager_id' => $this->manager_id,
+            'currency' => $this->currency,
         ]);
 
         $this->showCreateModal = false;
@@ -133,6 +138,7 @@ class Index extends Component
             'planned_end_date' => 'nullable|date|after_or_equal:planned_start_date',
             'estimated_budget' => 'nullable|numeric|min:0',
             'manager_id' => 'required|exists:users,id',
+            'currency' => 'required|in:USD,NGN',
         ]);
 
         $project = Project::findOrFail($this->editingProject);
@@ -147,6 +153,7 @@ class Index extends Component
             'planned_end_date' => $this->planned_end_date ?: null,
             'estimated_budget' => $this->estimated_budget ?: null,
             'manager_id' => $this->manager_id,
+            'currency' => $this->currency,
         ]);
 
         $this->showEditModal = false;
@@ -184,7 +191,8 @@ class Index extends Component
         $this->planned_start_date = '';
         $this->planned_end_date = '';
         $this->estimated_budget = '';
-        $this->manager_id = auth()->id();
+        $this->manager_id = Auth::id();
+        $this->currency = 'USD';
         $this->resetErrorBag();
     }
 }

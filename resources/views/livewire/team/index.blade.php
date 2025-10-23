@@ -1,9 +1,13 @@
 <div>
-    <flux:header class="flex items-center justify-between">
-        <flux:heading size="lg">Team Members</flux:heading>
-        @if(auth()->user()->isProjectManager())
-            <flux:button variant="primary" wire:click="openCreateModal" icon="plus">Add Team Member</flux:button>
-        @endif
+    <flux:header class="space-y-4">
+        <div class="w-full space-y-4">
+            <div class="flex items-center justify-between">
+                <flux:heading size="lg">Team Members</flux:heading>
+                @if(auth()->user()->isProjectManager())
+                    <flux:button variant="primary" wire:click="openCreateModal" icon="plus">Add Team Member</flux:button>
+                @endif
+            </div>
+        </div>
     </flux:header>
 
     <flux:main>

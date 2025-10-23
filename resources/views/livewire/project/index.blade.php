@@ -1,7 +1,30 @@
 <div>    
-    <flux:header class="flex items-center justify-between">
-        <flux:heading size="lg">Projects</flux:heading>
-        <flux:button variant="primary" wire:click="openCreateModal" icon="plus">New Project</flux:button>
+    <flux:header class="space-y-4">
+        <div class="w-full space-y-4">
+            <div class="flex items-center justify-between">
+                <flux:heading size="lg">Projects</flux:heading>
+                <flux:button variant="primary" wire:click="openCreateModal" icon="plus">New Project</flux:button>
+            </div>
+
+            <div class="w-full grid grid-cols-1 md:grid-cols-4 gap-4">
+                <flux:card>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Total Projects</div>
+                    <div class="font-semibold text-2xl">{{ $projects->total() }}</div>
+                </flux:card>
+                <flux:card>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Active</div>
+                    <div class="font-semibold text-2xl text-green-600">{{ \App\Models\Project::where('status', 'active')->count() }}</div>
+                </flux:card>
+                <flux:card>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Completed</div>
+                    <div class="font-semibold text-2xl text-blue-600">{{ \App\Models\Project::where('status', 'completed')->count() }}</div>
+                </flux:card>
+                <flux:card>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">On Hold</div>
+                    <div class="font-semibold text-2xl text-yellow-600">{{ \App\Models\Project::where('status', 'on_hold')->count() }}</div>
+                </flux:card>
+            </div>
+        </div>
     </flux:header>
 
     <flux:main>
@@ -93,9 +116,15 @@
                                 {{ ucfirst(str_replace('_', ' ', $project->status)) }}
                             </flux:badge>
                             
-                            <div class="flex items-center gap-2 text-sm text-gray-500">
-                                <flux:icon.bars-3 class="w-4 h-4" />
-                                <span>{{ $project->phases->count() }} phases</span>
+                            <div class="flex items-center gap-4 text-sm text-gray-500">
+                                <div class="flex items-center gap-1">
+                                    <flux:icon.currency-dollar class="w-4 h-4" />
+                                    <span>{{ $project->formatCurrency($project->estimated_budget ?? 0, 0) }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <flux:icon.bars-3 class="w-4 h-4" />
+                                    <span>{{ $project->phases->count() }} phases</span>
+                                </div>
                             </div>
                         </div>
 
@@ -164,7 +193,12 @@
                     <flux:input wire:model="planned_end_date" type="date" label="Planned End Date" />
                 </div>
 
-                <flux:input wire:model="estimated_budget" type="number" step="0.01" label="Estimated Budget ($)" placeholder="0.00" />
+                <flux:select wire:model="currency" label="Currency" required>
+                    <flux:select.option value="USD">USD ($)</flux:select.option>
+                    <flux:select.option value="NGN">NGN (₦)</flux:select.option>
+                </flux:select>
+
+                <flux:input wire:model="estimated_budget" type="number" step="0.01" label="Estimated Budget ({{ $currency === 'NGN' ? '₦' : '$' }})" placeholder="0.00" />
 
                 <div class="flex gap-2">
                     <flux:spacer />
@@ -215,7 +249,12 @@
                     <flux:input wire:model="planned_end_date" type="date" label="Planned End Date" />
                 </div>
 
-                <flux:input wire:model="estimated_budget" type="number" step="0.01" label="Estimated Budget ($)" placeholder="0.00" />
+                <flux:select wire:model="currency" label="Currency" required>
+                    <flux:select.option value="USD">USD ($)</flux:select.option>
+                    <flux:select.option value="NGN">NGN (₦)</flux:select.option>
+                </flux:select>
+
+                <flux:input wire:model="estimated_budget" type="number" step="0.01" label="Estimated Budget ({{ $currency === 'NGN' ? '₦' : '$' }})" placeholder="0.00" />
 
                 <div class="flex gap-2">
                     <flux:spacer />

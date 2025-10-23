@@ -31,6 +31,10 @@ class Task extends Model
         'assigned_to',
         'inspection_status',
         'inspection_notes',
+        'inspected_by',
+        'inspected_at',
+        'inspector_feedback',
+        'requires_re_inspection',
     ];
 
     protected $casts = [
@@ -44,6 +48,8 @@ class Task extends Model
         'actual_hours' => 'decimal:2',
         'weight' => 'decimal:2',
         'order' => 'integer',
+        'inspected_at' => 'datetime',
+        'requires_re_inspection' => 'boolean',
     ];
 
     /**
@@ -95,6 +101,30 @@ class Task extends Model
     }
 
     /**
+     * Get the inspector who inspected this task
+     */
+    public function inspector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'inspected_by');
+    }
+
+    /**
+     * Get all inventories for this task
+     */
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(Inventory::class);
+    }
+
+    /**
+     * Get all material requests for this task
+     */
+    public function materialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class);
+    }
+
+    /**
      * Toggle task status (for circle click)
      */
     public function toggleStatus(): void
@@ -141,5 +171,59 @@ class Task extends Model
         }
         
         return $this->estimated_cost - $this->actual_cost;
+    }
+
+    /**
+     * Approve task inspection
+     */
+    public function approveInspection(User $inspector, ?string $feedback = null): void
+    {
+        $this->inspection_status = 'passed';
+        $this->inspected_by = $inspector->id;
+        $this->inspected_at = now();
+        $this->inspector_feedback = $feedback;
+        $this->requires_re_inspection = false;
+        $this->save();
+    }
+
+    /**
+     * Fail task inspection
+     */
+    public function failInspection(User $inspector, string $feedback, bool $requiresReInspection = true): void
+    {
+        $this->inspection_status = 'failed';
+        $this->inspected_by = $inspector->id;
+        $this->inspected_at = now();
+        $this->inspector_feedback = $feedback;
+        $this->requires_re_inspection = $requiresReInspection;
+        $this->save();
+    }
+
+    /**
+     * Request re-inspection
+     */
+    public function requestReInspection(): void
+    {
+        $this->inspection_status = 're_inspection';
+        $this->requires_re_inspection = true;
+        $this->save();
+    }
+
+    /**
+     * Check if task requires inspection
+     */
+    public function requiresInspection(): bool
+    {
+        return $this->status === 'completed' && 
+               in_array($this->inspection_status, ['pending', 're_inspection', null]);
+    }
+
+    /**
+     * Check if task is fully approved
+     */
+    public function isFullyApproved(): bool
+    {
+        return $this->status === 'completed' && 
+               $this->inspection_status === 'passed';
     }
 }

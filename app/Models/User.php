@@ -10,11 +10,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -100,7 +101,7 @@ class User extends Authenticatable
      */
     public function isProjectManager(): bool
     {
-        return $this->role === 'project_manager';
+        return $this->hasRole('project_manager');
     }
 
     /**
@@ -108,7 +109,7 @@ class User extends Authenticatable
      */
     public function isContractor(): bool
     {
-        return $this->role === 'contractor';
+        return $this->hasRole('contractor');
     }
 
     /**
@@ -116,7 +117,7 @@ class User extends Authenticatable
      */
     public function isClient(): bool
     {
-        return $this->role === 'client';
+        return $this->hasRole('client');
     }
 
     /**
@@ -124,6 +125,157 @@ class User extends Authenticatable
      */
     public function isInspector(): bool
     {
-        return $this->role === 'inspector';
+        return $this->hasRole('inspector');
+    }
+
+    /**
+     * Check if user is an engineer
+     */
+    public function isEngineer(): bool
+    {
+        return $this->hasRole('engineer');
+    }
+
+    /**
+     * Check if user is a developer
+     */
+    public function isDeveloper(): bool
+    {
+        return $this->hasRole('developer');
+    }
+
+    /**
+     * Check if user is a director
+     */
+    public function isDirector(): bool
+    {
+        return $this->hasRole('director');
+    }
+
+    /**
+     * Check if user is a manager
+     */
+    public function isManager(): bool
+    {
+        return $this->hasRole('manager');
+    }
+
+    /**
+     * Check if user is a worker
+     */
+    public function isWorker(): bool
+    {
+        return $this->hasRole('worker');
+    }
+
+    /**
+     * Check if user is a super admin
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super_admin');
+    }
+
+    /**
+     * Check if user can manage materials/inventory
+     */
+    public function canManageMaterials(): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'project_manager', 'director', 'manager']) ||
+               $this->hasPermissionTo('manage materials');
+    }
+
+    /**
+     * Check if user can view materials/inventory
+     */
+    public function canViewMaterials(): bool
+    {
+        // Clients cannot view materials
+        if ($this->hasRole('client')) {
+            return false;
+        }
+
+        // Workers can only view materials for their tasks
+        if ($this->hasRole('worker')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if user can approve material requests
+     */
+    public function canApproveMaterialRequests(): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'director', 'manager', 'project_manager']) ||
+               $this->hasPermissionTo('approve material requests');
+    }
+
+    /**
+     * Check if user can inspect tasks
+     */
+    public function canInspectTasks(): bool
+    {
+        return $this->hasAnyRole(['inspector', 'super_admin']) ||
+               $this->hasPermissionTo('inspect tasks');
+    }
+
+    /**
+     * Get projects accessible by this user based on role
+     */
+    public function getAccessibleProjects()
+    {
+        if ($this->isSuperAdmin()) {
+            return Project::all();
+        }
+
+        if ($this->isClient()) {
+            // Clients can only view their own projects
+            return $this->projects;
+        }
+
+        // All other roles can view projects assigned to them
+        return $this->projects()->with(['phases', 'users'])->get();
+    }
+
+    /**
+     * Get material requests for this user
+     */
+    public function materialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'requested_by');
+    }
+
+    /**
+     * Get material requests approved by this user
+     */
+    public function approvedMaterialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'approved_by');
+    }
+
+    /**
+     * Get material requests disbursed by this user
+     */
+    public function disbursedMaterialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'disbursed_by');
+    }
+
+    /**
+     * Get material requests confirmed by this user (inspector)
+     */
+    public function confirmedMaterialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'confirmed_by');
+    }
+
+    /**
+     * Get tasks inspected by this user
+     */
+    public function inspectedTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'inspected_by');
     }
 }

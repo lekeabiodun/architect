@@ -32,7 +32,7 @@
                 </flux:card>
                 <flux:card>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Budget</div>
-                    <div class="font-semibold">${{ number_format($project->estimated_budget ?? 0, 0) }}</div>
+                    <div class="font-semibold">{{ $project->formatCurrency($project->estimated_budget ?? 0, 0) }}</div>
                 </flux:card>
             </div>
         </div>
@@ -155,7 +155,7 @@
                                                 @if($task->estimated_cost)
                                                     <div class="flex items-center gap-1">
                                                         <flux:icon.currency-dollar class="w-3 h-3" />
-                                                        <span>${{ number_format($task->estimated_cost, 0) }}</span>
+                                                        <span>{{ $project->formatCurrency($task->estimated_cost, 0) }}</span>
                                                     </div>
                                                 @endif
                                                 @if($task->estimated_hours)

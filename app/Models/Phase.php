@@ -52,6 +52,22 @@ class Phase extends Model
     }
 
     /**
+     * Get all inventories for this phase
+     */
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(Inventory::class);
+    }
+
+    /**
+     * Get all material requests for this phase
+     */
+    public function materialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class);
+    }
+
+    /**
      * Calculate phase progress based on task completion
      */
     public function calculateProgress(): float

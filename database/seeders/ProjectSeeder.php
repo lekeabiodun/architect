@@ -34,6 +34,8 @@ class ProjectSeeder extends Seeder
             ]
         );
 
+        $contractor1->assignRole('contractor');
+
         $contractor2 = User::firstOrCreate(
             ['email' => 'contractor2@example.com'],
             [
@@ -42,6 +44,8 @@ class ProjectSeeder extends Seeder
                 'role' => 'contractor',
             ]
         );
+
+        $contractor1->assignRole('contractor');
 
         $client = User::firstOrCreate(
             ['email' => 'client@example.com'],

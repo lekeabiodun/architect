@@ -236,3 +236,8 @@ resources/views/livewire/
 ## License
 
 MIT
+
+
+Add price for material request
+Move material request into the project
+client shouldn't see the comments

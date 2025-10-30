@@ -14,16 +14,36 @@ class WorkerView extends Component
     use WithPagination, WithFileUploads;
 
     public $selectedTask = null;
-    public $comment_text = '';
+    public $progress_comment = '';
     public $filter_status = '';
-    public $media_files = [];
+    public $progress_media = [];
     public $task_status = '';
+    public $showProgressModal = false;
+    public $showDetailsModal = false;
 
     public function selectTask($taskId)
     {
-        $task = Task::with(['phase.project'])->findOrFail($taskId);
+        $task = Task::with([
+            'phase.project',
+            'predecessor',
+            'inspector',
+            'comments.user',
+        ])->findOrFail($taskId);
         $this->authorize('view', $task);
         $this->selectedTask = $task;
+    }
+
+    public function openProgressModal($taskId)
+    {
+        $this->resetProgressForm();
+        $this->selectTask($taskId);
+        $this->showProgressModal = true;
+    }
+
+    public function openDetailsModal($taskId)
+    {
+        $this->selectTask($taskId);
+        $this->showDetailsModal = true;
     }
 
     public function completeTask($taskId)
@@ -75,22 +95,28 @@ class WorkerView extends Component
         session()->flash('message', 'Task status updated successfully!');
     }
 
-    public function addComment($taskId)
+    public function saveTaskProgress()
     {
-        $task = Task::findOrFail($taskId);
-        $this->authorize('view', $task);
+        if (!$this->selectedTask) {
+            return;
+        }
+
+        $this->authorize('view', $this->selectedTask);
 
         $this->validate([
-            'comment_text' => 'required|string|min:3',
-            'media_files.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,mov,avi|max:51200', // 50MB max
+            'progress_comment' => 'nullable|string',
+            'progress_media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,wmv|max:51200',
         ]);
 
-        // Handle file uploads
-        $uploadedFiles = [];
-        $mediaType = null;
+        if (!$this->progress_comment && empty($this->progress_media)) {
+            $this->addError('progress_comment', 'Add a comment or attach at least one media file.');
+            return;
+        }
 
-        if (!empty($this->media_files)) {
-            foreach ($this->media_files as $file) {
+        $uploadedFiles = [];
+
+        if (!empty($this->progress_media)) {
+            foreach ($this->progress_media as $file) {
                 $path = $file->store('task-media', 'public');
                 $uploadedFiles[] = [
                     'path' => $path,
@@ -98,32 +124,62 @@ class WorkerView extends Component
                     'mime_type' => $file->getMimeType(),
                     'size' => $file->getSize(),
                 ];
-
-                // Determine media type
-                if (str_starts_with($file->getMimeType(), 'image/')) {
-                    $mediaType = $mediaType === 'video' ? 'mixed' : 'image';
-                } elseif (str_starts_with($file->getMimeType(), 'video/')) {
-                    $mediaType = $mediaType === 'image' ? 'mixed' : 'video';
-                }
             }
         }
 
         TaskComment::create([
-            'task_id' => $taskId,
+            'task_id' => $this->selectedTask->id,
             'user_id' => auth()->id(),
-            'comment' => $this->comment_text,
+            'comment' => $this->progress_comment,
             'media_files' => !empty($uploadedFiles) ? $uploadedFiles : null,
-            'media_type' => $mediaType,
+            'media_type' => $this->determineMediaType($uploadedFiles),
         ]);
 
-        $this->comment_text = '';
-        $this->media_files = [];
-        
-        if ($this->selectedTask && $this->selectedTask->id == $taskId) {
-            $this->selectedTask->load('comments.user');
+        $this->resetProgressForm();
+
+        $this->selectedTask->load('comments.user');
+
+        session()->flash('message', 'Progress update added successfully!');
+    }
+
+    public function closeProgressModal()
+    {
+        $this->showProgressModal = false;
+        $this->resetProgressForm();
+        $this->selectedTask = null;
+    }
+
+    public function closeDetailsModal()
+    {
+        $this->showDetailsModal = false;
+    }
+
+    private function resetProgressForm()
+    {
+        $this->progress_comment = '';
+        $this->progress_media = [];
+        $this->resetErrorBag();
+        $this->resetValidation();
+    }
+
+    private function determineMediaType(array $mediaFiles): ?string
+    {
+        if (empty($mediaFiles)) {
+            return null;
         }
 
-        session()->flash('message', 'Comment added successfully!');
+        $types = collect($mediaFiles)
+            ->map(function ($file) {
+                $mime = $file['mime_type'] ?? '';
+
+                return str_starts_with($mime, 'image/')
+                    ? 'image'
+                    : (str_starts_with($mime, 'video/') ? 'video' : 'file');
+            })
+            ->unique()
+            ->values();
+
+        return $types->count() === 1 ? $types->first() : 'mixed';
     }
 
     public function render()

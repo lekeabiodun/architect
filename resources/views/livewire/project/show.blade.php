@@ -121,21 +121,29 @@
                         @if($phase->tasks->count() > 0)
                             <div class="space-y-2">
                                 @foreach($phase->tasks as $task)
-                                    <div class="flex items-center gap-3 p-3 rounded-lg border {{ $task->status === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700' }} hover:shadow-md transition-all">
+                                    <div 
+                                        class="flex items-center gap-3 p-3 rounded-lg border 
+                                            {{ $task->status === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                                                : ($task->due() ? 'bg-red-200 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700') }} 
+                                             hover:shadow-md transition-all
+                                        "
+                                        wire:click="openTaskProgress({{ $task->id }})"
+                                    >
                                         {{-- Status Circle (Clickable) --}}
                                         @can('update', $project)
-                                        <button 
-                                            wire:click="toggleTaskStatus({{ $task->id }})"
-                                            class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110
-                                                {{ $task->status === 'completed' ? 'bg-green-500 border-green-600' : ($task->status === 'in_progress' ? 'bg-blue-500 border-blue-600' : 'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600') }}"
-                                            title="Click to toggle status"
-                                        >
-                                            @if($task->status === 'completed')
-                                                <flux:icon.check class="w-4 h-4 text-white" />
-                                            @elseif($task->status === 'in_progress')
-                                                <div class="w-2 h-2 bg-white rounded-full"></div>
-                                            @endif
-                                        </button>
+                                            <button 
+                                                wire:click.stop="toggleTaskStatus({{ $task->getKey() }})"
+                                                class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110
+                                                    {{ $task->status === 'completed' ? 'bg-green-500 border-green-600' : ($task->status === 'in_progress' ? 'bg-blue-500 border-blue-600' : 'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600') }}"
+                                                title="Click to toggle status"
+                                            >
+                                                @if($task->status === 'completed')
+                                                    <flux:icon.check class="w-4 h-4 text-white" />
+                                                @elseif($task->status === 'in_progress')
+                                                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                                                @endif
+                                            </button>
                                         @endcan
 
                                         {{-- Task Details --}}
@@ -170,16 +178,37 @@
                                                         <span>{{ $task->estimated_hours }}h</span>
                                                     </div>
                                                 @endif
+
+                                                @if($task->planned_start_date)
+                                                    <div class="flex items-center gap-1">
+                                                        <flux:icon.calendar class="w-3 h-3" />
+                                                        <span>{{ $task->planned_start_date->format('Y-m-d') }}</span>
+                                                    </div>
+                                                @endif
+                                                @if($task->planned_end_date)
+                                                    <div class="flex items-center gap-1">
+                                                        <flux:icon.calendar class="w-3 h-3" />
+                                                        <span>{{ $task->planned_end_date->format('Y-m-d') }}</span>
+                                                    </div>
+                                                @endif
+                                                @if($task->due())
+                                                    <div class="flex items-center gap-1">
+                                                        <flux:icon.clock class="w-3 h-3" />
+                                                        <span>Due</span>
+                                                    </div>
+                                                @endif
+
+
                                             </div>
                                         </div>
 
                                         {{-- Actions --}}
                                         @can('update', $project)
                                         <flux:dropdown align="end">
-                                            <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" icon-variant="mini" />
+                                            <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" icon-variant="mini" wire:click.stop />
                                             <flux:menu>
-                                                <flux:menu.item icon="pencil" wire:click="openEditTaskModal({{ $task->id }})">Edit</flux:menu.item>
-                                                <flux:menu.item icon="trash" variant="danger" wire:click="deleteTask({{ $task->id }})" wire:confirm="Delete this task?">Delete</flux:menu.item>
+                                                <flux:menu.item icon="pencil" wire:click.stop="openEditTaskModal({{ $task->id }})">Edit</flux:menu.item>
+                                                <flux:menu.item icon="trash" variant="danger" wire:click.stop="deleteTask({{ $task->id }})" wire:confirm="Delete this task?">Delete</flux:menu.item>
                                             </flux:menu>
                                         </flux:dropdown>
                                         @endcan
@@ -293,6 +322,119 @@
                     <flux:button type="submit" variant="primary">{{ $editingTask ? 'Update' : 'Add' }} Task</flux:button>
                 </div>
             </form>
+        </div>
+    </flux:modal>
+
+    {{-- Task Progress Modal --}}
+    <flux:modal 
+        name="task-progress-modal" 
+        wire:model.self="showProgressModal" 
+        class="md:w-[700px]"
+        variant="flyout" position="right"
+    >
+        <div class="flex h-full flex-col gap-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <flux:heading size="lg">Task Progress</flux:heading>
+                    @if($progressTask)
+                        <flux:text class="mt-1 text-sm text-gray-500">{{ $progressTask->name }}</flux:text>
+                    @endif
+                </div>
+            </div>
+
+            <div class="flex w-full flex-1 flex-col gap-6 min-h-0">
+                <div class="flex flex-1 flex-col gap-4 min-h-0">
+                    <flux:heading size="sm">Progress History</flux:heading>
+
+                    @if($progressTask && $progressTask->comments->isNotEmpty())
+                        <div class="flex-1 space-y-4 overflow-y-auto pr-2">
+                            @foreach($progressTask->comments as $comment)
+                                <flux:card>
+                                    <div class="space-y-3">
+                                        <div class="flex items-start justify-between">
+                                            <div>
+                                                <p class="font-medium">{{ $comment->user->name ?? 'Unknown User' }}</p>
+                                                <p class="text-xs text-gray-500">{{ $comment->created_at?->diffForHumans() }}</p>
+                                            </div>
+                                        </div>
+
+                                        @if($comment->comment)
+                                            <p class="text-sm text-gray-700">{{ $comment->comment }}</p>
+                                        @endif
+
+                                        @if($comment->media_files)
+                                            <div class="grid gap-2">
+                                                @foreach($comment->media_files as $media)
+                                                    @php
+                                                        $isImage = str_starts_with($media['mime_type'] ?? '', 'image/');
+                                                        $isVideo = str_starts_with($media['mime_type'] ?? '', 'video/');
+                                                    @endphp
+                                                    <div class="border border-gray-200 rounded-md bg-gray-50 p-2">
+                                                        <div class="mb-2 flex items-center justify-between text-xs text-gray-500">
+                                                            <span>{{ $media['name'] ?? 'Attachment' }}</span>
+                                                            <a
+                                                                href="{{ Storage::disk('public')->url($media['path'] ?? '') }}"
+                                                                target="_blank"
+                                                                class="text-blue-600 hover:underline"
+                                                            >View</a>
+                                                        </div>
+
+                                                        @if($isImage)
+                                                            <img
+                                                                src="{{ Storage::disk('public')->url($media['path'] ?? '') }}"
+                                                                alt="Task progress image"
+                                                                class="max-h-40 rounded-md object-cover"
+                                                            >
+                                                        @elseif($isVideo)
+                                                            <video
+                                                                controls
+                                                                class="w-full rounded-md"
+                                                                src="{{ Storage::disk('public')->url($media['path'] ?? '') }}"
+                                                            ></video>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                </flux:card>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="flex-1 text-sm text-gray-500">No progress updates yet. Add the first update to keep stakeholders informed.</div>
+                    @endif
+                </div>
+
+                <div class="space-y-4 border-t border-gray-200 pt-4 flex-shrink-0 bg-white/90 dark:border-gray-700 dark:bg-gray-900/90">
+                    <flux:heading size="sm">Add Update</flux:heading>
+
+                    <flux:textarea
+                        wire:model.defer="progress_comment"
+                        label="Comment"
+                        placeholder="Describe progress, blockers, or next steps"
+                        rows="4"
+                    />
+
+                    <div class="space-y-4">
+                        <flux:heading size="xs" class="text-gray-500">Media Attachments</flux:heading>
+                        <flux:input
+                            wire:model="progress_media"
+                            type="file"
+                            label="Upload images or videos"
+                            multiple
+                            helper="Supported: jpg, png, gif, webp, mp4, mov, avi, wmv. Max 50MB each."
+                        />
+                        @error('progress_media.*')
+                            <p class="text-sm text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <flux:button variant="ghost" wire:click="closeProgressModal">Cancel</flux:button>
+                        <flux:button variant="primary" wire:click="saveTaskProgress">Save Update</flux:button>
+                    </div>
+                </div>
+            </div>
         </div>
     </flux:modal>
 </div>

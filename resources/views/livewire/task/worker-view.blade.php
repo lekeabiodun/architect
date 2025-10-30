@@ -172,118 +172,22 @@
                             <flux:button 
                                 size="sm" 
                                 variant="ghost"
-                                wire:click="selectTask({{ $task->id }})"
-                                x-data
-                                @click="$dispatch('open-modal', 'comment-modal-{{ $task->id }}')"
+                                wire:click="openProgressModal({{ $task->id }})"
                             >
                                 <flux:icon.chat-bubble-left class="w-4 h-4 mr-1" />
-                                Add Comment
+                                Update Progress
                             </flux:button>
 
                             <flux:button 
                                 size="sm" 
                                 variant="ghost"
-                                wire:click="selectTask({{ $task->id }})"
-                                x-data
-                                @click="$dispatch('open-modal', 'details-modal-{{ $task->id }}')"
+                                wire:click="openDetailsModal({{ $task->id }})"
                             >
                                 <flux:icon.information-circle class="w-4 h-4 mr-1" />
                                 View Details
                             </flux:button>
                         </div>
                     </div>
-
-                    {{-- Comment Modal --}}
-                    <flux:modal name="comment-modal-{{ $task->id }}" class="md:w-[500px]">
-                        <div class="space-y-4">
-                            <flux:heading size="lg">Add Comment</flux:heading>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Task: <strong>{{ $task->name }}</strong>
-                            </p>
-                            <flux:textarea 
-                                wire:model="comment_text" 
-                                label="Comment" 
-                                placeholder="Add your comment or update about this task..."
-                                rows="4" 
-                                required
-                            />
-                            
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Attach Images/Videos (Optional)</label>
-                                <input 
-                                    type="file" 
-                                    wire:model="media_files" 
-                                    multiple 
-                                    accept="image/*,video/*"
-                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                />
-                                @error('media_files.*') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                                <p class="text-xs text-gray-500 mt-1">Max 50MB per file. Supported: JPG, PNG, GIF, MP4, MOV, AVI</p>
-                                
-                                @if($media_files)
-                                    <div class="mt-2">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">Files selected:</div>
-                                        @foreach($media_files as $file)
-                                            <div class="text-xs text-gray-600">• {{ $file->getClientOriginalName() }}</div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            </div>
-
-                            <div class="flex gap-2">
-                                <flux:spacer />
-                                <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
-                                <flux:button variant="primary" wire:click="addComment({{ $task->id }})">
-                                    Add Comment
-                                </flux:button>
-                            </div>
-                        </div>
-                    </flux:modal>
-
-                    {{-- Details Modal --}}
-                    <flux:modal name="details-modal-{{ $task->id }}" class="md:w-[600px]">
-                        <div class="space-y-4">
-                            <flux:heading size="lg">{{ $task->name }}</flux:heading>
-                            
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <div class="text-xs text-gray-500">Status</div>
-                                    <div class="font-medium">{{ ucfirst(str_replace('_', ' ', $task->status)) }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-gray-500">Inspection Status</div>
-                                    <div class="font-medium">{{ $task->inspection_status ? ucfirst($task->inspection_status) : 'Not inspected' }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-gray-500">Estimated Cost</div>
-                                    <div class="font-medium">${{ number_format($task->estimated_cost ?? 0, 0) }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-gray-500">Estimated Hours</div>
-                                    <div class="font-medium">{{ $task->estimated_hours ?? 'N/A' }}h</div>
-                                </div>
-                            </div>
-
-                            @if($task->description)
-                                <div>
-                                    <div class="text-xs font-medium text-gray-500 mb-1">Description:</div>
-                                    <p class="text-sm">{{ $task->description }}</p>
-                                </div>
-                            @endif
-
-                            @if($task->predecessor)
-                                <div>
-                                    <div class="text-xs font-medium text-gray-500 mb-1">Depends On:</div>
-                                    <p class="text-sm">{{ $task->predecessor->name }}</p>
-                                </div>
-                            @endif
-
-                            <div class="flex gap-2">
-                                <flux:spacer />
-                                <flux:modal.close><flux:button variant="primary">Close</flux:button></flux:modal.close>
-                            </div>
-                        </div>
-                    </flux:modal>
                 </flux:card>
             @empty
                 <flux:card class="text-center py-12">
@@ -298,4 +202,167 @@
             </div>
         </div>
     </flux:main>
+
+    {{-- Task Progress Modal --}}
+    <flux:modal 
+        wire:model.self="showProgressModal" 
+        class="md:w-[700px]"
+        variant="flyout" position="right"
+    >
+        @if($selectedTask)
+            <div class="flex h-full flex-col gap-6">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <flux:heading size="lg">Task Progress</flux:heading>
+                        <flux:text class="mt-1 text-sm text-gray-500">{{ $selectedTask->name }}</flux:text>
+                    </div>
+                    <flux:button variant="ghost" icon="x-mark" wire:click="closeProgressModal" />
+                </div>
+
+                <div class="flex w-full flex-1 flex-col gap-6 min-h-0">
+                    <div class="flex flex-1 flex-col gap-4 min-h-0">
+                        <flux:heading size="sm">Progress History</flux:heading>
+
+                        @if($selectedTask->comments->isNotEmpty())
+                            <div class="flex-1 space-y-4 overflow-y-auto pr-2">
+                                @foreach($selectedTask->comments as $comment)
+                                    <flux:card>
+                                        <div class="space-y-3">
+                                            <div class="flex items-start justify-between">
+                                                <div>
+                                                    <p class="font-medium">{{ $comment->user->name ?? 'Unknown User' }}</p>
+                                                    <p class="text-xs text-gray-500">{{ $comment->created_at?->diffForHumans() }}</p>
+                                                </div>
+                                            </div>
+
+                                            @if($comment->comment)
+                                                <p class="text-sm text-gray-700 dark:text-gray-300">{{ $comment->comment }}</p>
+                                            @endif
+
+                                            @if($comment->media_files)
+                                                <div class="grid gap-2">
+                                                    @foreach($comment->media_files as $media)
+                                                        @php
+                                                            $isImage = str_starts_with($media['mime_type'] ?? '', 'image/');
+                                                            $isVideo = str_starts_with($media['mime_type'] ?? '', 'video/');
+                                                        @endphp
+                                                        <div class="border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900/60 p-2">
+                                                            <div class="mb-2 flex items-center justify-between text-xs text-gray-500">
+                                                                <span>{{ $media['name'] ?? 'Attachment' }}</span>
+                                                                <a
+                                                                    href="{{ Storage::disk('public')->url($media['path'] ?? '') }}"
+                                                                    target="_blank"
+                                                                    class="text-blue-600 hover:underline"
+                                                                >View</a>
+                                                            </div>
+
+                                                            @if($isImage)
+                                                                <img
+                                                                    src="{{ Storage::disk('public')->url($media['path'] ?? '') }}"
+                                                                    alt="Task progress image"
+                                                                    class="max-h-40 w-full rounded-md object-cover"
+                                                                >
+                                                            @elseif($isVideo)
+                                                                <video
+                                                                    controls
+                                                                    class="w-full rounded-md"
+                                                                    src="{{ Storage::disk('public')->url($media['path'] ?? '') }}"
+                                                                ></video>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </flux:card>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="flex-1 text-sm text-gray-500">No progress updates yet. Add the first update to keep stakeholders informed.</div>
+                        @endif
+                    </div>
+
+                    <div class="space-y-4 border-t border-gray-200 pt-4 flex-shrink-0 bg-white/90 dark:border-gray-700 dark:bg-gray-900/90">
+                        <flux:heading size="sm">Add Update</flux:heading>
+
+                        <flux:textarea
+                            wire:model.defer="progress_comment"
+                            label="Comment"
+                            placeholder="Describe progress, blockers, or next steps"
+                            rows="4"
+                        />
+                        @error('progress_comment')
+                            <p class="text-sm text-red-500">{{ $message }}</p>
+                        @enderror
+
+                        <div class="space-y-4">
+                            <flux:heading size="xs" class="text-gray-500">Media Attachments</flux:heading>
+                            <flux:input
+                                wire:model="progress_media"
+                                type="file"
+                                label="Upload images or videos"
+                                multiple
+                                helper="Supported: jpg, png, gif, webp, mp4, mov, avi, wmv. Max 50MB each."
+                            />
+                            @error('progress_media.*')
+                                <p class="text-sm text-red-500">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="flex justify-end gap-2">
+                            <flux:button variant="ghost" wire:click="closeProgressModal">Cancel</flux:button>
+                            <flux:button variant="primary" wire:click="saveTaskProgress">Save Update</flux:button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
+
+    {{-- Details Modal --}}
+    <flux:modal wire:model="showDetailsModal" class="md:w-[600px]">
+        @if($selectedTask)
+            <div class="space-y-4">
+                <flux:heading size="lg">{{ $selectedTask->name }}</flux:heading>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-xs text-gray-500">Status</div>
+                        <div class="font-medium">{{ ucfirst(str_replace('_', ' ', $selectedTask->status)) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">Inspection Status</div>
+                        <div class="font-medium">{{ $selectedTask->inspection_status ? ucfirst($selectedTask->inspection_status) : 'Not inspected' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">Estimated Cost</div>
+                        <div class="font-medium">${{ number_format($selectedTask->estimated_cost ?? 0, 0) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">Estimated Hours</div>
+                        <div class="font-medium">{{ $selectedTask->estimated_hours ?? 'N/A' }}h</div>
+                    </div>
+                </div>
+
+                @if($selectedTask->description)
+                    <div>
+                        <div class="text-xs font-medium text-gray-500 mb-1">Description:</div>
+                        <p class="text-sm">{{ $selectedTask->description }}</p>
+                    </div>
+                @endif
+
+                @if($selectedTask->predecessor)
+                    <div>
+                        <div class="text-xs font-medium text-gray-500 mb-1">Depends On:</div>
+                        <p class="text-sm">{{ $selectedTask->predecessor->name }}</p>
+                    </div>
+                @endif
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+                    <flux:button variant="primary" wire:click="closeDetailsModal">Close</flux:button>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
 </div>

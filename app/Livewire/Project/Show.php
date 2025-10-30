@@ -5,17 +5,24 @@ namespace App\Livewire\Project;
 use App\Models\Phase;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskComment;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Show extends Component
 {
+    use WithFileUploads;
+
     public $project;
     public $showPhaseModal = false;
     public $showTaskModal = false;
+    public $showProgressModal = false;
     public $editingPhase = null;
     public $editingTask = null;
     public $selectedPhase = null;
+    public $progressTaskId = null;
     
     // Phase form fields
     public $phase_name = '';
@@ -36,6 +43,8 @@ class Show extends Component
     public $task_estimated_hours = '';
     public $task_assigned_to = '';
     public $task_predecessor_id = '';
+    public $progress_comment = '';
+    public $progress_media = [];
 
     public function mount($id)
     {
@@ -57,6 +66,7 @@ class Show extends Component
         return view('livewire.project.show', [
             'users' => $users,
             'availableTasks' => $availableTasks,
+            'progressTask' => $this->progressTask,
         ]);
     }
 
@@ -213,6 +223,73 @@ class Show extends Component
         $this->project->refresh();
     }
 
+    public function openTaskProgress($taskId)
+    {
+        $this->progressTaskId = $taskId;
+        $this->showProgressModal = true;
+        $this->resetProgressForm();
+    }
+
+    public function closeProgressModal()
+    {
+        $this->showProgressModal = false;
+        $this->resetProgressForm(true);
+    }
+
+    public function saveTaskProgress()
+    {
+        if (!$this->progressTaskId) {
+            return;
+        }
+
+        $this->validate([
+            'progress_comment' => 'nullable|string',
+            'progress_media.*' => 'file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,wmv|max:51200',
+        ]);
+
+        if (!$this->progress_comment && empty($this->progress_media)) {
+            $this->addError('progress_comment', 'Add a comment or attach at least one media file.');
+            return;
+        }
+
+        if (!Auth::check()) {
+            $this->addError('progress_comment', 'You must be logged in to add progress updates.');
+            return;
+        }
+
+        $task = Task::findOrFail($this->progressTaskId);
+
+        $mediaFiles = collect($this->progress_media)->map(function ($file) use ($task) {
+            $storedPath = $file->store("tasks/{$task->id}/progress", 'public');
+
+            return [
+                'path' => $storedPath,
+                'mime_type' => $file->getMimeType(),
+                'name' => $file->getClientOriginalName(),
+            ];
+        })->toArray();
+
+        TaskComment::create([
+            'task_id' => $task->id,
+            'user_id' => Auth::id(),
+            'comment' => $this->progress_comment,
+            'media_files' => $mediaFiles,
+            'media_type' => $this->determineMediaType($mediaFiles),
+        ]);
+
+        $this->resetProgressForm();
+        $this->project->refresh();
+    }
+
+    public function getProgressTaskProperty()
+    {
+        if (!$this->progressTaskId) {
+            return null;
+        }
+
+        return Task::with(['comments.user'])->find($this->progressTaskId);
+    }
+
     private function resetPhaseForm()
     {
         $this->editingPhase = null;
@@ -239,5 +316,37 @@ class Show extends Component
         $this->task_assigned_to = '';
         $this->task_predecessor_id = '';
         $this->resetErrorBag();
+    }
+
+    private function resetProgressForm(bool $clearSelection = false)
+    {
+        $this->progress_comment = '';
+        $this->progress_media = [];
+        $this->resetErrorBag();
+        $this->resetValidation();
+
+        if ($clearSelection) {
+            $this->progressTaskId = null;
+        }
+    }
+
+    private function determineMediaType(array $mediaFiles): ?string
+    {
+        if (empty($mediaFiles)) {
+            return null;
+        }
+
+        $types = collect($mediaFiles)
+            ->map(function ($file) {
+                $mime = $file['mime_type'] ?? '';
+
+                return str_starts_with($mime, 'image/')
+                    ? 'image'
+                    : (str_starts_with($mime, 'video/') ? 'video' : 'file');
+            })
+            ->unique()
+            ->values();
+
+        return $types->count() === 1 ? $types->first() : 'mixed';
     }
 }

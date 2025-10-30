@@ -15,8 +15,12 @@ class MaterialRequest extends Component
     use WithPagination;
 
     public $showRequestModal = false;
+    public $showApproveModal = false;
+    public $showRejectModal = false;
+    public $showDisburseModal = false;
+    public $showConfirmModal = false;
     public $selectedRequest = null;
-    
+
     // Request fields
     public $request_material_id = '';
     public $request_project_id = '';
@@ -45,6 +49,13 @@ class MaterialRequest extends Component
         $this->authorize('create', MaterialRequestModel::class);
         $this->resetRequestForm();
         $this->showRequestModal = true;
+    }
+
+    public function openMaterialModal()
+    {
+        $this->authorize('create', Material::class);
+        $this->resetMaterialForm();
+        $this->showMaterialModal = true;
     }
 
     public function saveRequest()
@@ -84,10 +95,13 @@ class MaterialRequest extends Component
         ]);
 
         $request->approve(auth()->user(), $this->approved_quantity, $this->approval_notes);
-        
+
         $this->selectedRequest = null;
         $this->approved_quantity = '';
         $this->approval_notes = '';
+        $this->showApproveModal = false;
+
+        session()->flash('message', 'Request approved successfully');
     }
 
     public function rejectRequest($requestId)
@@ -100,9 +114,12 @@ class MaterialRequest extends Component
         ]);
 
         $request->reject(auth()->user(), $this->approval_notes);
-        
+
         $this->selectedRequest = null;
         $this->approval_notes = '';
+        $this->showRejectModal = false;
+
+        session()->flash('message', 'Request rejected');
     }
 
     public function disburseRequest($requestId)
@@ -115,10 +132,13 @@ class MaterialRequest extends Component
         ]);
 
         $request->disburse(auth()->user(), $this->disbursed_quantity, $this->disbursement_notes);
-        
+
         $this->selectedRequest = null;
         $this->disbursed_quantity = '';
         $this->disbursement_notes = '';
+        $this->showDisburseModal = false;
+
+        session()->flash('message', 'Materials disbursed successfully');
     }
 
     public function confirmRequest($requestId)
@@ -131,14 +151,54 @@ class MaterialRequest extends Component
         ]);
 
         $request->confirm(auth()->user(), $this->confirmation_notes);
-        
+
         $this->selectedRequest = null;
         $this->confirmation_notes = '';
+        $this->showConfirmModal = false;
+
+        session()->flash('message', 'Delivery confirmed successfully');
     }
 
-    public function selectRequest($requestId)
+    public function openApproveModal($requestId)
     {
+        $request = MaterialRequestModel::findOrFail($requestId);
+        $this->authorize('approve', $request);
+
         $this->selectedRequest = $requestId;
+        $this->approved_quantity = $request->requested_quantity;
+        $this->approval_notes = '';
+        $this->showApproveModal = true;
+    }
+
+    public function openRejectModal($requestId)
+    {
+        $request = MaterialRequestModel::findOrFail($requestId);
+        $this->authorize('reject', $request);
+
+        $this->selectedRequest = $requestId;
+        $this->approval_notes = '';
+        $this->showRejectModal = true;
+    }
+
+    public function openDisburseModal($requestId)
+    {
+        $request = MaterialRequestModel::findOrFail($requestId);
+        $this->authorize('disburse', $request);
+
+        $this->selectedRequest = $requestId;
+        $this->disbursed_quantity = $request->approved_quantity;
+        $this->disbursement_notes = '';
+        $this->showDisburseModal = true;
+    }
+
+    public function openConfirmModal($requestId)
+    {
+        $request = MaterialRequestModel::findOrFail($requestId);
+        $this->authorize('confirm', $request);
+
+        $this->selectedRequest = $requestId;
+        $this->confirmation_notes = '';
+        $this->showConfirmModal = true;
     }
 
     private function resetRequestForm()

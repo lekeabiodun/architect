@@ -232,8 +232,17 @@ class Task extends Model
             $this->inspection_status === 'passed';
     }
 
-    public function project(): BelongsTo
+    /**
+     * Get the project this task belongs to (through phase)
+     */
+    public function project()
     {
-        return $this->belongsTo(Project::class);
+        return $this->phase?->project;
+    }
+
+    public function due()
+    {
+        if (!$this->planned_end_date) return false;
+        return $this->planned_end_date->isPast();
     }
 }

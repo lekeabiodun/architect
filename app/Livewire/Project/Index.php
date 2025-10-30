@@ -148,7 +148,6 @@ class Index extends Component
             'currency' => $this->currency,
         ]);
 
-        // Attach team members with their system roles
         if (!empty($this->team_members)) {
             foreach ($this->team_members as $userId) {
                 $user = User::find($userId);

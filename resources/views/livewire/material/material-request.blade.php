@@ -30,8 +30,15 @@
         </div>
     </flux:header>
 
+    @if (session()->has('message'))
+        <div class="p-4 mb-4 text-sm text-green-800 bg-green-100 rounded-lg dark:bg-green-900 dark:text-green-200" role="alert">
+            {{ session('message') }}
+        </div>
+    @endif
+
     <flux:main>
         <div class="space-y-4">
+
             @forelse($requests as $request)
                 <flux:card>
                     <div class="space-y-4">
@@ -132,18 +139,14 @@
                                     <flux:button 
                                         size="sm" 
                                         variant="primary"
-                                        wire:click="selectRequest({{ $request->id }})"
-                                        x-data
-                                        @click="$dispatch('open-modal', 'approve-modal-{{ $request->id }}')"
+                                        wire:click="openApproveModal({{ $request->id }})"
                                     >
                                         Approve Request
                                     </flux:button>
                                     <flux:button 
                                         size="sm" 
                                         variant="danger"
-                                        wire:click="selectRequest({{ $request->id }})"
-                                        x-data
-                                        @click="$dispatch('open-modal', 'reject-modal-{{ $request->id }}')"
+                                        wire:click="openRejectModal({{ $request->id }})"
                                     >
                                         Reject
                                     </flux:button>
@@ -159,9 +162,7 @@
                                     <flux:button 
                                         size="sm" 
                                         variant="primary"
-                                        wire:click="selectRequest({{ $request->id }})"
-                                        x-data
-                                        @click="$dispatch('open-modal', 'disburse-modal-{{ $request->id }}')"
+                                        wire:click="openDisburseModal({{ $request->id }})"
                                     >
                                         Disburse Materials
                                     </flux:button>
@@ -177,9 +178,7 @@
                                     <flux:button 
                                         size="sm" 
                                         variant="primary"
-                                        wire:click="selectRequest({{ $request->id }})"
-                                        x-data
-                                        @click="$dispatch('open-modal', 'confirm-modal-{{ $request->id }}')"
+                                        wire:click="openConfirmModal({{ $request->id }})"
                                     >
                                         Confirm Delivery
                                     </flux:button>
@@ -198,63 +197,6 @@
                             </div>
                         @endif
                     </div>
-
-                    {{-- Inline Modals for Actions --}}
-                    @can('approve', $request)
-                        <flux:modal name="approve-modal-{{ $request->id }}" class="md:w-[400px]">
-                            <div class="space-y-4">
-                                <flux:heading size="lg">Approve Request</flux:heading>
-                                <flux:input wire:model="approved_quantity" type="number" step="0.01" label="Approved Quantity" required />
-                                <flux:textarea wire:model="approval_notes" label="Notes" rows="2" />
-                                <div class="flex gap-2">
-                                    <flux:spacer />
-                                    <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
-                                    <flux:button variant="primary" wire:click="approveRequest({{ $request->id }})">Approve</flux:button>
-                                </div>
-                            </div>
-                        </flux:modal>
-
-                        <flux:modal name="reject-modal-{{ $request->id }}" class="md:w-[400px]">
-                            <div class="space-y-4">
-                                <flux:heading size="lg">Reject Request</flux:heading>
-                                <flux:textarea wire:model="approval_notes" label="Rejection Reason" rows="3" required />
-                                <div class="flex gap-2">
-                                    <flux:spacer />
-                                    <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
-                                    <flux:button variant="danger" wire:click="rejectRequest({{ $request->id }})">Reject</flux:button>
-                                </div>
-                            </div>
-                        </flux:modal>
-                    @endcan
-
-                    @can('disburse', $request)
-                        <flux:modal name="disburse-modal-{{ $request->id }}" class="md:w-[400px]">
-                            <div class="space-y-4">
-                                <flux:heading size="lg">Disburse Materials</flux:heading>
-                                <flux:input wire:model="disbursed_quantity" type="number" step="0.01" label="Disbursed Quantity" required />
-                                <flux:textarea wire:model="disbursement_notes" label="Disbursement Notes" rows="2" />
-                                <div class="flex gap-2">
-                                    <flux:spacer />
-                                    <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
-                                    <flux:button variant="primary" wire:click="disburseRequest({{ $request->id }})">Disburse</flux:button>
-                                </div>
-                            </div>
-                        </flux:modal>
-                    @endcan
-
-                    @can('confirm', $request)
-                        <flux:modal name="confirm-modal-{{ $request->id }}" class="md:w-[400px]">
-                            <div class="space-y-4">
-                                <flux:heading size="lg">Confirm Delivery</flux:heading>
-                                <flux:textarea wire:model="confirmation_notes" label="Confirmation Notes" rows="3" required />
-                                <div class="flex gap-2">
-                                    <flux:spacer />
-                                    <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
-                                    <flux:button variant="primary" wire:click="confirmRequest({{ $request->id }})">Confirm</flux:button>
-                                </div>
-                            </div>
-                        </flux:modal>
-                    @endcan
                 </flux:card>
             @empty
                 <flux:card class="text-center py-12">
@@ -271,8 +213,59 @@
         </div>
     </flux:main>
 
+    {{-- Action Modals --}}
+    <flux:modal wire:model.self="showApproveModal" class="md:w-[400px]">
+        <div class="space-y-4">
+            <flux:heading size="lg">Approve Request</flux:heading>
+            <flux:input wire:model="approved_quantity" type="number" step="0.01" label="Approved Quantity" required />
+            <flux:textarea wire:model="approval_notes" label="Notes" rows="2" />
+            <div class="flex gap-2">
+                <flux:spacer />
+                <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
+                <flux:button variant="primary" wire:click="approveRequest({{ $this->selectedRequest }})">Approve</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal wire:model.self="showRejectModal" class="md:w-[400px]">
+        <div class="space-y-4">
+            <flux:heading size="lg">Reject Request</flux:heading>
+            <flux:textarea wire:model="approval_notes" label="Rejection Reason" rows="3" required />
+            <div class="flex gap-2">
+                <flux:spacer />
+                <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
+                <flux:button variant="danger" wire:click="rejectRequest({{ $this->selectedRequest }})">Reject</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal wire:model.self="showDisburseModal" class="md:w-[400px]">
+        <div class="space-y-4">
+            <flux:heading size="lg">Disburse Materials</flux:heading>
+            <flux:input wire:model="disbursed_quantity" type="number" step="0.01" label="Disbursed Quantity" required />
+            <flux:textarea wire:model="disbursement_notes" label="Disbursement Notes" rows="2" />
+            <div class="flex gap-2">
+                <flux:spacer />
+                <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
+                <flux:button variant="primary" wire:click="disburseRequest({{ $this->selectedRequest }})">Disburse</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal wire:model.self="showConfirmModal" class="md:w-[400px]">
+        <div class="space-y-4">
+            <flux:heading size="lg">Confirm Delivery</flux:heading>
+            <flux:textarea wire:model="confirmation_notes" label="Confirmation Notes" rows="3" required />
+            <div class="flex gap-2">
+                <flux:spacer />
+                <flux:modal.close><flux:button variant="ghost">Cancel</flux:button></flux:modal.close>
+                <flux:button variant="primary" wire:click="confirmRequest({{ $this->selectedRequest }})">Confirm</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
     {{-- New Request Modal --}}
-    <flux:modal name="request-modal" wire:model.self="showRequestModal" class="md:w-[600px]">
+    <flux:modal wire:model.self="showRequestModal" class="md:w-[600px]">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">New Material Request</flux:heading>

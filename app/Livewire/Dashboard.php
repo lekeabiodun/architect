@@ -35,9 +35,10 @@ class Dashboard extends Component
             ->paginate(12);
 
         $tasks = Task::query()
-            ->with(['project', 'user'])
+            ->with(['phase.project', 'assignedUser', 'phase'])
+            ->whereNotNull('phase_id')
             ->when(!$user->isSuperAdmin(), function ($query) use ($user) {
-                $query->whereHas('project', function ($pq) use ($user) {
+                $query->whereHas('phase.project', function ($pq) use ($user) {
                     $pq->where('manager_id', $user->id)
                         ->orWhereHas('users', function ($uq) use ($user) {
                             $uq->where('user_id', $user->id);

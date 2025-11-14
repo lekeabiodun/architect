@@ -18,23 +18,24 @@ Route::group([
     'middleware' => ['auth', 'verified'],
 ], function () {
     Route::get('/', Dashboard::class)->name('dashboard.index');
-    
+
     // Projects
     Route::get('/projects', App\Livewire\Project\Index::class)->name('projects.index');
     Route::get('/projects/{id}', App\Livewire\Project\Show::class)->name('projects.show');
     Route::get('/projects/{id}/budget', App\Livewire\Project\Budget::class)->name('projects.budget');
-    
+    Route::get('/projects/{id}/bill-of-quantities', App\Livewire\Project\BillOfQuantities::class)->name('projects.bill-of-quantities');
+
     // Materials & Inventory
-    Route::get('/materials', App\Livewire\Material\Index::class)->name('materials.index');
+    // Route::get('/materials', App\Livewire\Material\Index::class)->name('materials.index');
     Route::get('/material-requests', App\Livewire\Material\MaterialRequest::class)->name('material-requests.index');
-    
+
     // Inspector
     Route::get('/inspector/dashboard', App\Livewire\Inspector\Dashboard::class)->name('inspector.dashboard');
     Route::get('/inspector/tasks', App\Livewire\Task\InspectorView::class)->name('inspector.tasks');
-    
+
     // Worker Tasks
     Route::get('/my-tasks', App\Livewire\Task\WorkerView::class)->name('tasks.my-tasks');
-    
+
     // Team
     Route::get('/team', App\Livewire\Team\Index::class)->name('team.index');
 });

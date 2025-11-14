@@ -26,6 +26,7 @@ class Project extends Model
         'actual_end_date',
         'estimated_budget',
         'actual_cost',
+        'bill_of_quantities_total',
         'currency',
         'overall_progress',
         'manager_id',
@@ -39,6 +40,7 @@ class Project extends Model
         'actual_end_date' => 'date',
         'estimated_budget' => 'decimal:2',
         'actual_cost' => 'decimal:2',
+        'bill_of_quantities_total' => 'decimal:2',
         'overall_progress' => 'decimal:2',
     ];
 
@@ -83,6 +85,11 @@ class Project extends Model
     public function materialRequests(): HasMany
     {
         return $this->hasMany(MaterialRequest::class);
+    }
+
+    public function billOfQuantities(): HasMany
+    {
+        return $this->hasMany(BillOfQuantity::class)->orderBy('order');
     }
 
     public function calculateProgress(): float

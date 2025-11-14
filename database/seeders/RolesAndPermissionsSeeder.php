@@ -67,6 +67,17 @@ class RolesAndPermissionsSeeder extends Seeder
             // Comment permissions
             'add comments',
             'view comments',
+
+            // Time tracking permissions
+            'clock in',
+            'clock out',
+            'view time entries',
+            'manage time entries',
+            'view leave requests',
+            'create leave requests',
+            'edit leave requests',
+            'approve leave requests',
+            'reject leave requests',
         ];
 
         foreach ($permissions as $permission) {

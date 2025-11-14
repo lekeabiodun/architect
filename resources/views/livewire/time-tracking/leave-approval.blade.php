@@ -260,7 +260,19 @@
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500">Leave Type:</span>
-                                <div class="font-medium">{{ $getLeaveTypeName($selectedRequest->leave_type) }}</div>
+                                <div class="font-medium">
+                                    @php
+                                        echo match($selectedRequest->leave_type) {
+                                            'vacation' => 'Vacation Leave',
+                                            'sick' => 'Sick Leave',
+                                            'personal' => 'Personal Leave',
+                                            'bereavement' => 'Bereavement Leave',
+                                            'maternity' => 'Maternity Leave',
+                                            'paternity' => 'Paternity Leave',
+                                            default => ucfirst(str_replace('_', ' ', $selectedRequest->leave_type))
+                                        };
+                                    @endphp
+                                </div>
                             </div>
                         </div>
                         

@@ -55,10 +55,12 @@
                         <flux:table.column>Managing</flux:table.column>
                         <flux:table.column>Projects</flux:table.column>
                         <flux:table.column>Tasks</flux:table.column>
+                        <flux:table.column>Leave Balance</flux:table.column>
+                        <flux:table.column>Leave Used</flux:table.column>
                         <flux:table.column>Joined</flux:table.column>
-                        @if(auth()->user()->isProjectManager())
+                        @can('manageTeamMembers', auth()->user())
                             <flux:table.column>Actions</flux:table.column>
-                        @endif
+                        @endcan
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -109,18 +111,53 @@
                                     </div>
                                 </flux:table.cell>
                                 
+                                <flux:table.cell>
+                                    <div class="text-center">
+                                        @php
+                                            $totalLeaveBalance = $user->leaveBalances->sum('balance_days');
+                                        @endphp
+                                        <span class="font-semibold text-blue-600">{{ number_format($totalLeaveBalance, 1) }}</span>
+                                        <div class="text-xs text-gray-500">days</div>
+                                    </div>
+                                </flux:table.cell>
+                                
+                                <flux:table.cell>
+                                    <div class="text-center">
+                                        @php
+                                            $totalLeaveUsed = $user->leaveRequests->first()?->total_days ?? 0;
+                                            $totalLeaveRequests = $user->leaveRequests->first()?->total_requests ?? 0;
+                                        @endphp
+                                        <span class="font-semibold text-orange-600">{{ number_format($totalLeaveUsed, 1) }}</span>
+                                        <div class="text-xs text-gray-500">{{ $totalLeaveRequests }} requests</div>
+                                    </div>
+                                </flux:table.cell>
+                                
                                 <flux:table.cell class="whitespace-nowrap">
                                     <div class="text-sm text-gray-600 dark:text-gray-400">
                                         {{ $user->created_at->diffForHumans() }}
                                     </div>
                                 </flux:table.cell>
                                 
-                                @if(auth()->user()->isProjectManager())
+                                @can('manageTeamMembers', auth()->user())
                                     <flux:table.cell>
                                         @if($user->id !== auth()->id())
                                             <div class="flex items-center gap-2">
-                                                <flux:button size="sm" variant="ghost" icon="pencil" wire:click="openEditModal({{ $user->id }})"></flux:button>
-                                                <flux:button size="sm" variant="danger" icon="trash" wire:click="deleteUser({{ $user->id }})" wire:confirm="Are you sure you want to remove this team member?"></flux:button>
+                                                <flux:dropdown position="bottom end">
+                                                    <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal"></flux:button>
+                                                    
+                                                    <flux:menu>
+                                                        <flux:menu.item wire:click="openEditModal({{ $user->id }})" icon="pencil">
+                                                            Edit User
+                                                        </flux:menu.item>
+                                                        <flux:menu.item wire:click="openLeaveBalanceModal({{ $user->id }})" icon="calendar-days">
+                                                            Manage Leave
+                                                        </flux:menu.item>
+                                                        <flux:menu.separator />
+                                                        <flux:menu.item wire:click="deleteUser({{ $user->id }})" icon="trash" variant="danger">
+                                                            Remove User
+                                                        </flux:menu.item>
+                                                    </flux:menu>
+                                                </flux:dropdown>
                                             </div>
                                         @else
                                             <span class="text-sm text-gray-400">-</span>
@@ -222,6 +259,70 @@
                         <flux:button variant="ghost">Cancel</flux:button>
                     </flux:modal.close>
                     <flux:button type="submit" variant="primary">Update Member</flux:button>
+                </div>
+            </form>
+        </div>
+    </flux:modal>
+
+    {{-- Leave Balance Management Modal --}}
+    <flux:modal wire:model="showLeaveBalanceModal" width="2xl">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">Manage Leave Balance</flux:heading>
+                <flux:text class="mt-2">Set leave days for team members.</flux:text>
+            </div>
+            
+            <form wire:submit="saveLeaveBalance" class="space-y-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <flux:avatar size="sm" :name="$selectedUserForLeave?->name" />
+                        <div>
+                            <div class="font-medium">{{ $selectedUserForLeave?->name }}</div>
+                            <div class="text-sm text-gray-500">{{ $selectedUserForLeave?->email }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <flux:select wire:model="leaveBalanceForm.leave_type" label="Leave Type" required>
+                    <flux:select.option value="vacation">Vacation Leave</flux:select.option>
+                    <flux:select.option value="sick">Sick Leave</flux:select.option>
+                    <flux:select.option value="personal">Personal Leave</flux:select.option>
+                    <flux:select.option value="bereavement">Bereavement Leave</flux:select.option>
+                    <flux:select.option value="maternity">Maternity Leave</flux:select.option>
+                    <flux:select.option value="paternity">Paternity Leave</flux:select.option>
+                </flux:select>
+                
+                <flux:select wire:model="leaveBalanceForm.year" label="Year" required>
+                    @for($year = now()->year; $year <= now()->year + 1; $year++)
+                        <flux:select.option value="{{ $year }}">{{ $year }}</flux:select.option>
+                    @endfor
+                </flux:select>
+                
+                <flux:input 
+                    wire:model="leaveBalanceForm.balance_days" 
+                    type="number" 
+                    step="0.5" 
+                    min="0" 
+                    max="365"
+                    label="Leave Days to Add"
+                    placeholder="Enter number of days"
+                    required />
+                
+                @if($currentLeaveBalance)
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="text-sm">
+                            <span class="font-medium text-blue-800">Current Balance:</span>
+                            <span class="text-blue-600 ml-2">{{ number_format($currentLeaveBalance->balance_days, 1) }} days</span>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="primary">Save Leave Balance</flux:button>
                 </div>
             </form>
         </div>

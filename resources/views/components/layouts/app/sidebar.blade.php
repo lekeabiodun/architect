@@ -41,22 +41,52 @@
                         </flux:navlist.item>
                     @endcan
 
-                    @can('inspectTasks', App\Models\User::class)
+                     @can('inspectTasks', App\Models\User::class)
                         <flux:navlist.item icon="check-badge" :href="route('inspector.dashboard')" :current="request()->routeIs('inspector.*')" wire:navigate>
                             {{ __('Inspections') }}
                         </flux:navlist.item>
                     @endcan
 
-                    @can('viewTeamMembers', App\Models\User::class)
-                        <flux:navlist.item icon="user-group" :href="route('team.index')" :current="request()->routeIs('team.*')" wire:navigate>
-                            {{ __('Team Members') }}
-                        </flux:navlist.item>
-                    @endcan
+                    {{-- Time Tracking --}}
+                    {{-- @canany(['createTimeEntries', 'manageTimeTracking', 'createLeaveRequests', 'approveLeave'], App\Models\User::class) --}}
+                        <flux:navlist.group :heading="__('Time Tracking')" class="grid">
+                            @can('createTimeEntries', App\Models\User::class)
+                                <flux:navlist.item icon="clock" :href="route('time-tracking.index')" :current="request()->routeIs('time-tracking.index')" wire:navigate>
+                                    {{ __('Clock In/Out') }}
+                                </flux:navlist.item>
+                            @endcan
+
+                            @can('manageTimeTracking', App\Models\User::class)
+                                <flux:navlist.item icon="chart-bar" :href="route('time-tracking.timesheet')" :current="request()->routeIs('time-tracking.timesheet')" wire:navigate>
+                                    {{ __('Timesheet Admin') }}
+                                </flux:navlist.item>
+                            @endcan
+
+                            @can('createLeaveRequests', App\Models\User::class)
+                                <flux:navlist.item icon="calendar-days" :href="route('time-tracking.leave')" :current="request()->routeIs('time-tracking.leave')" wire:navigate>
+                                    {{ __('Leave Requests') }}
+                                </flux:navlist.item>
+                            @endcan
+
+                            @can('approveLeave', App\Models\User::class)
+                                <flux:navlist.item icon="check-circle" :href="route('time-tracking.leave-approval')" :current="request()->routeIs('time-tracking.leave-approval')" wire:navigate>
+                                    {{ __('Leave Approval') }}
+                                </flux:navlist.item>
+                            @endcan
+                        </flux:navlist.group>
+                    {{-- @endcanany --}}
+
+                    
                 </flux:navlist.group>
 
                 {{-- Admin Settings (Super Admin only) --}}
                 @can('viewAdminSettings', App\Models\User::class)
                     <flux:navlist.group :heading="__('Administration')" class="grid">
+                        @can('viewTeamMembers', App\Models\User::class)
+                            <flux:navlist.item icon="user-group" :href="route('team.index')" :current="request()->routeIs('team.*')" wire:navigate>
+                                {{ __('Team Members') }}
+                            </flux:navlist.item>
+                        @endcan
                         <flux:navlist.item icon="shield-check" :href="route('settings.roles-permissions')" :current="request()->routeIs('settings.roles-permissions')" wire:navigate>
                             {{ __('Roles & Permissions') }}
                         </flux:navlist.item>
@@ -177,6 +207,8 @@
         </flux:header>
 
         {{ $slot }}
+
+        <flux:toast position="top end" class="pt-20" />
 
         @fluxScripts
     </body>

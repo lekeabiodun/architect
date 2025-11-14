@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Material;
 
-use App\Models\Material;
+use App\Models\BillOfQuantity;
 use App\Models\MaterialRequest as MaterialRequestModel;
 use App\Models\Project;
 use App\Models\Phase;
@@ -24,12 +24,18 @@ class MaterialRequest extends Component
     // Request fields
     public $request_material_id = '';
     public $request_project_id = '';
+    public $request_bill_of_quantity_id = '';
     public $request_phase_id = '';
     public $request_task_id = '';
     public $request_quantity = '';
     public $request_required_date = '';
     public $request_purpose = '';
     public $request_justification = '';
+    
+    // BOQ info for display
+    public $availableBoqQuantity = 0;
+    public $selectedBoqItem = null;
+    public $boqItems = [];
 
     // Approval fields
     public $approved_quantity = '';
@@ -44,6 +50,54 @@ class MaterialRequest extends Component
 
     protected $queryString = ['status_filter', 'project_filter'];
 
+    public function updatedRequestProjectId()
+    {
+        $this->request_bill_of_quantity_id = '';
+        $this->availableBoqQuantity = 0;
+        $this->selectedBoqItem = null;
+        $this->boqItems = [];
+        
+        if ($this->request_project_id) {
+            $this->boqItems = BillOfQuantity::where('project_id', $this->request_project_id)
+                ->where('requestable_quantity', '>', 0)
+                ->orderBy('order')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'description' => $item->description,
+                        'item_code' => $item->item_code,
+                        'unit' => $item->unit,
+                        'quantity' => $item->quantity,
+                        'requestable_quantity' => $item->requestable_quantity,
+                        'remaining_quantity' => $item->remaining_quantity,
+                        'unit_rate' => $item->unit_rate,
+                        'category' => $item->category,
+                    ];
+                })
+                ->toArray();
+        }
+    }
+
+    public function updatedRequestBillOfQuantityId()
+    {
+        if ($this->request_bill_of_quantity_id) {
+            $this->selectedBoqItem = BillOfQuantity::find($this->request_bill_of_quantity_id);
+            $this->availableBoqQuantity = $this->selectedBoqItem->remaining_quantity;
+        } else {
+            $this->availableBoqQuantity = 0;
+            $this->selectedBoqItem = null;
+        }
+    }
+
+    public function updatedRequestQuantity()
+    {
+        // Clear any previous BOQ quantity errors when quantity changes
+        if ($this->request_bill_of_quantity_id) {
+            $this->resetErrorBag('request_quantity');
+        }
+    }
+
     public function openRequestModal()
     {
         $this->authorize('create', MaterialRequestModel::class);
@@ -51,28 +105,32 @@ class MaterialRequest extends Component
         $this->showRequestModal = true;
     }
 
-    public function openMaterialModal()
-    {
-        $this->authorize('create', Material::class);
-        $this->resetMaterialForm();
-        $this->showMaterialModal = true;
-    }
-
     public function saveRequest()
     {
         $this->validate([
-            'request_material_id' => 'required|exists:materials,id',
             'request_project_id' => 'required|exists:projects,id',
+            'request_bill_of_quantity_id' => 'required|exists:bill_of_quantities,id',
             'request_quantity' => 'required|numeric|min:0',
             'request_required_date' => 'required|date',
             'request_purpose' => 'required|string',
         ]);
 
-        MaterialRequestModel::create([
-            'material_id' => $this->request_material_id,
+        // Get the selected BOQ item
+        $boq = BillOfQuantity::find($this->request_bill_of_quantity_id);
+        
+        // Check BOQ limits
+        if (!$boq->canRequestQuantity($this->request_quantity)) {
+            $this->addError('request_quantity', 
+                "Insufficient BOQ quantity. Available: {$boq->remaining_quantity} {$boq->unit}, Requested: {$this->request_quantity} {$boq->unit}"
+            );
+            return;
+        }
+
+        $request = MaterialRequestModel::create([
             'project_id' => $this->request_project_id,
             'phase_id' => $this->request_phase_id ?: null,
             'task_id' => $this->request_task_id ?: null,
+            'bill_of_quantity_id' => $this->request_bill_of_quantity_id,
             'requested_quantity' => $this->request_quantity,
             'required_date' => $this->request_required_date,
             'purpose' => $this->request_purpose,
@@ -83,6 +141,8 @@ class MaterialRequest extends Component
 
         $this->showRequestModal = false;
         $this->resetRequestForm();
+
+        session()->flash('message', 'Material request submitted successfully');
     }
 
     public function approveRequest($requestId)
@@ -94,7 +154,23 @@ class MaterialRequest extends Component
             'approved_quantity' => 'required|numeric|min:0',
         ]);
 
+        // Check BOQ limits if BOQ is selected
+        if ($request->bill_of_quantity_id) {
+            $boq = $request->billOfQuantity;
+            if (!$boq->canRequestQuantity($this->approved_quantity)) {
+                $this->addError('approved_quantity', 
+                    "Insufficient BOQ quantity. Available: {$boq->remaining_quantity} {$boq->unit}, Requested: {$this->approved_quantity} {$boq->unit}"
+                );
+                return;
+            }
+        }
+
         $request->approve(auth()->user(), $this->approved_quantity, $this->approval_notes);
+
+        // Consume from BOQ if applicable
+        if ($request->bill_of_quantity_id) {
+            $request->billOfQuantity->consumeQuantity($this->approved_quantity);
+        }
 
         $this->selectedRequest = null;
         $this->approved_quantity = '';
@@ -112,6 +188,11 @@ class MaterialRequest extends Component
         $this->validate([
             'approval_notes' => 'required|string',
         ]);
+
+        // Return to BOQ if previously approved
+        if ($request->bill_of_quantity_id && $request->approved_quantity) {
+            $request->billOfQuantity->returnQuantity($request->approved_quantity);
+        }
 
         $request->reject(auth()->user(), $this->approval_notes);
 
@@ -207,16 +288,20 @@ class MaterialRequest extends Component
         $this->request_project_id = '';
         $this->request_phase_id = '';
         $this->request_task_id = '';
+        $this->request_bill_of_quantity_id = '';
         $this->request_quantity = '';
         $this->request_required_date = '';
         $this->request_purpose = '';
         $this->request_justification = '';
+        $this->availableBoqQuantity = 0;
+        $this->selectedBoqItem = null;
+        $this->boqItems = [];
     }
 
     public function render()
     {
         $query = MaterialRequestModel::query()
-            ->with(['material', 'project', 'phase', 'task', 'requester', 'approver', 'disburser', 'confirmer']);
+            ->with(['project', 'phase', 'task', 'billOfQuantity', 'requester', 'approver', 'disburser', 'confirmer']);
 
         // Filter by status
         if ($this->status_filter) {
@@ -237,13 +322,12 @@ class MaterialRequest extends Component
         }
 
         $requests = $query->latest()->paginate(15);
-        $materials = Material::orderBy('name')->get();
         $projects = $user->getAccessibleProjects();
 
         return view('livewire.material.material-request', [
             'requests' => $requests,
-            'materials' => $materials,
             'projects' => $projects,
+            'boqItems' => $this->boqItems,
         ]);
     }
 }

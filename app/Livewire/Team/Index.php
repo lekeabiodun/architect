@@ -3,6 +3,8 @@
 namespace App\Livewire\Team;
 
 use App\Models\User;
+use App\Models\LeaveBalance;
+use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -12,15 +14,24 @@ class Index extends Component
 
     public $showCreateModal = false;
     public $showEditModal = false;
+    public $showLeaveBalanceModal = false;
     public $editingUser = null;
-    
+    public $selectedUserForLeave = null;
+
     // Form fields
     public $name = '';
     public $email = '';
     public $password = '';
     public $password_confirmation = '';
     public $role = 'contractor';
-    
+
+    // Leave balance form fields
+    public $leaveBalanceForm = [
+        'leave_type' => 'annual',
+        'year' => null,
+        'balance_days' => '',
+    ];
+
     // Filters
     public $search = '';
     public $roleFilter = '';
@@ -36,10 +47,14 @@ class Index extends Component
     {
         $users = User::query()
             ->withCount(['managedProjects', 'tasks', 'projects'])
+            ->with(['leaveBalances', 'leaveRequests' => function ($query) {
+                $query->selectRaw('user_id, COUNT(*) as total_requests, SUM(duration_days) as total_days')
+                    ->groupBy('user_id');
+            }])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('email', 'like', '%' . $this->search . '%');
+                        ->orWhere('email', 'like', '%' . $this->search . '%');
                 });
             })
             ->when($this->roleFilter, function ($query) {
@@ -50,6 +65,7 @@ class Index extends Component
 
         return view('livewire.team.index', [
             'users' => $users,
+            'currentLeaveBalance' => $this->getCurrentLeaveBalanceProperty(),
         ]);
     }
 
@@ -62,14 +78,14 @@ class Index extends Component
     public function openEditModal($userId)
     {
         $user = User::findOrFail($userId);
-        
+
         $this->editingUser = $user->id;
         $this->name = $user->name;
         $this->email = $user->email;
         $this->role = $user->role;
         $this->password = '';
         $this->password_confirmation = '';
-        
+
         $this->showEditModal = true;
     }
 
@@ -91,7 +107,7 @@ class Index extends Component
 
         $this->showCreateModal = false;
         $this->resetForm();
-        
+
         session()->flash('message', 'Team member added successfully!');
     }
 
@@ -110,7 +126,7 @@ class Index extends Component
         $this->validate($rules);
 
         $user = User::findOrFail($this->editingUser);
-        
+
         $data = [
             'name' => $this->name,
             'email' => $this->email,
@@ -125,7 +141,7 @@ class Index extends Component
 
         $this->showEditModal = false;
         $this->resetForm();
-        
+
         session()->flash('message', 'Team member updated successfully!');
     }
 
@@ -139,7 +155,7 @@ class Index extends Component
 
         $user = User::findOrFail($userId);
         $user->delete();
-        
+
         session()->flash('message', 'Team member removed successfully!');
     }
 
@@ -153,14 +169,69 @@ class Index extends Component
         }
     }
 
-    private function resetForm()
+    public function resetCreateForm()
     {
-        $this->editingUser = null;
         $this->name = '';
         $this->email = '';
         $this->password = '';
         $this->password_confirmation = '';
         $this->role = 'contractor';
-        $this->resetErrorBag();
+    }
+
+    public function openLeaveBalanceModal($userId)
+    {
+        $this->selectedUserForLeave = User::findOrFail($userId);
+        $this->leaveBalanceForm = [
+            'leave_type' => 'vacation',
+            'year' => now()->year,
+            'balance_days' => '',
+        ];
+        $this->showLeaveBalanceModal = true;
+    }
+
+    public function closeLeaveBalanceModal()
+    {
+        $this->showLeaveBalanceModal = false;
+        $this->selectedUserForLeave = null;
+        $this->leaveBalanceForm = [
+            'leave_type' => 'vacation',
+            'year' => now()->year,
+            'balance_days' => '',
+        ];
+    }
+
+    public function saveLeaveBalance()
+    {
+        $this->validate([
+            'leaveBalanceForm.leave_type' => 'required|string|in:vacation,sick,personal,bereavement,maternity,paternity',
+            'leaveBalanceForm.year' => 'required|integer|min:2020|max:' . (now()->year + 2),
+            'leaveBalanceForm.balance_days' => 'required|numeric|min:0|max:365',
+        ]);
+
+        LeaveBalance::updateOrCreate(
+            [
+                'user_id' => $this->selectedUserForLeave->id,
+                'leave_type' => $this->leaveBalanceForm['leave_type'],
+                'year' => $this->leaveBalanceForm['year'],
+            ],
+            [
+                'balance_days' => $this->leaveBalanceForm['balance_days'],
+            ]
+        );
+
+        Flux::toast('Leave balance updated successfully', variant: 'success');
+        $this->closeLeaveBalanceModal();
+    }
+
+    public function getCurrentLeaveBalanceProperty()
+    {
+        if (!$this->selectedUserForLeave) {
+            return null;
+        }
+
+        return LeaveBalance::where('user_id', $this->selectedUserForLeave->id)
+            ->where('leave_type', $this->leaveBalanceForm['leave_type'])
+            ->where('year', $this->leaveBalanceForm['year'])
+            ->first();
     }
 }

@@ -30,12 +30,6 @@
         </div>
     </flux:header>
 
-    @if (session()->has('message'))
-        <div class="p-4 mb-4 text-sm text-green-800 bg-green-100 rounded-lg dark:bg-green-900 dark:text-green-200" role="alert">
-            {{ session('message') }}
-        </div>
-    @endif
-
     <flux:main>
         <div class="space-y-4">
 

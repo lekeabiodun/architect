@@ -36,6 +36,12 @@ Route::group([
     // Worker Tasks
     Route::get('/my-tasks', App\Livewire\Task\WorkerView::class)->name('tasks.my-tasks');
 
+    // Time Tracking
+    Route::get('/time-tracking', App\Livewire\TimeTracking\ClockInOut::class)->name('time-tracking.index');
+    Route::get('/time-tracking/timesheet', App\Livewire\TimeTracking\AdminTimesheet::class)->name('time-tracking.timesheet');
+    Route::get('/time-tracking/leave', App\Livewire\TimeTracking\LeaveRequestForm::class)->name('time-tracking.leave');
+    Route::get('/time-tracking/leave-approval', App\Livewire\TimeTracking\LeaveApproval::class)->name('time-tracking.leave-approval');
+
     // Team
     Route::get('/team', App\Livewire\Team\Index::class)->name('team.index');
 });

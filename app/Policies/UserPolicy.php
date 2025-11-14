@@ -158,4 +158,33 @@ class UserPolicy
 
         return $user->hasPermissionTo('view team members');
     }
+
+    public function createTimeEntries(User $user): bool
+    {
+        return true;
+        return $user->hasPermissionTo('create time entries');
+    }
+
+    public function manageTimeTracking(User $user): bool
+    {
+        return false;
+        return $user->hasPermissionTo('manage time tracking');
+    }
+
+    public function createLeaveRequests(User $user): bool
+    {
+        return true;
+        // return $user->hasPermissionTo('create leave requests');
+    }
+
+    public function approveLeave(User $user): bool
+    {
+        return false;
+        return $user->hasPermissionTo('approve leave');
+    }
+
+    public function manageTeamMembers(User $user): bool
+    {
+        return $user->hasPermissionTo('manage team members');
+    }
 }

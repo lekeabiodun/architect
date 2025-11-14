@@ -278,4 +278,100 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class, 'inspected_by');
     }
+
+    /**
+     * Get time entries for this user
+     */
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
+    /**
+     * Get active time entry for this user
+     */
+    public function activeTimeEntry(): ?TimeEntry
+    {
+        return $this->timeEntries()->active()->first();
+    }
+
+    /**
+     * Get leave requests for this user
+     */
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
+    /**
+     * Get leave balances for this user
+     */
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(LeaveBalance::class);
+    }
+
+    /**
+     * Get leave balance for specific type and year
+     */
+    public function getLeaveBalance(string $leaveType, int $year): ?LeaveBalance
+    {
+        return $this->leaveBalances()
+            ->where('leave_type', $leaveType)
+            ->where('year', $year)
+            ->first();
+    }
+
+    /**
+     * Check if user can manage time tracking (admin functionality)
+     */
+    public function canManageTimeTracking(): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'director', 'manager', 'project_manager']) ||
+            $this->hasPermissionTo('manage time tracking');
+    }
+
+    /**
+     * Check if user can approve leave requests
+     */
+    public function canApproveLeave(): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'director', 'manager', 'project_manager']) ||
+            $this->hasPermissionTo('approve leave');
+    }
+
+    /**
+     * Get total hours worked in a date range
+     */
+    public function getTotalHoursWorked($startDate, $endDate): float
+    {
+        return $this->timeEntries()
+            ->whereBetween('clock_in', [$startDate, $endDate])
+            ->get()
+            ->sum('total_hours');
+    }
+
+    /**
+     * Get current work hours today
+     */
+    public function getTodayHoursAttribute(): float
+    {
+        return $this->getTotalHoursWorked(now()->startOfDay(), now()->endOfDay());
+    }
+
+    /**
+     * Get current week hours
+     */
+    public function getWeekHoursAttribute(): float
+    {
+        return $this->getTotalHoursWorked(now()->startOfWeek(), now()->endOfWeek());
+    }
+
+    /**
+     * Get current month hours
+     */
+    public function getMonthHoursAttribute(): float
+    {
+        return $this->getTotalHoursWorked(now()->startOfMonth(), now()->endOfMonth());
+    }
 }

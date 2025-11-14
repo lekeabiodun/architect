@@ -11,13 +11,14 @@ class MaterialRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'material_id',
         'project_id',
         'phase_id',
         'task_id',
+        'bill_of_quantity_id',
         'requested_quantity',
         'approved_quantity',
         'disbursed_quantity',
+        'confirmed_quantity',
         'required_date',
         'purpose',
         'justification',
@@ -46,11 +47,11 @@ class MaterialRequest extends Model
     ];
 
     /**
-     * Get the material
+     * Get the bill of quantity
      */
-    public function material(): BelongsTo
+    public function billOfQuantity(): BelongsTo
     {
-        return $this->belongsTo(Material::class);
+        return $this->belongsTo(BillOfQuantity::class);
     }
 
     /**
@@ -190,5 +191,42 @@ class MaterialRequest extends Model
     public function canBeConfirmed(): bool
     {
         return $this->status === 'disbursed';
+    }
+
+    /**
+     * Check if requested quantity exceeds BOQ remaining amount
+     */
+    public function exceedsBoqLimit(): bool
+    {
+        if (!$this->bill_of_quantity_id) {
+            return false;
+        }
+
+        return !$this->billOfQuantity->canRequestQuantity($this->requested_quantity);
+    }
+
+    /**
+     * Get available quantity from BOQ
+     */
+    public function getAvailableQuantity(): float
+    {
+        if (!$this->bill_of_quantity_id) {
+            return 0;
+        }
+
+        return $this->billOfQuantity->remaining_quantity;
+    }
+
+    /**
+     * Get validation error for BOQ limit
+     */
+    public function getBoqLimitError(): string
+    {
+        if (!$this->bill_of_quantity_id) {
+            return '';
+        }
+
+        $available = $this->getAvailableQuantity();
+        return "Only {$available} {$this->billOfQuantity->unit} available. Requested: {$this->requested_quantity} {$this->billOfQuantity->unit}";
     }
 }

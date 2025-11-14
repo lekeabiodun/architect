@@ -29,11 +29,11 @@
                         </flux:navlist.item>
                     @endcan
 
-                    @can('viewMaterials', App\Models\User::class)
+                    {{-- @can('viewMaterials', App\Models\User::class)
                         <flux:navlist.item icon="cube" :href="route('materials.index')" :current="request()->routeIs('materials.*')" wire:navigate>
                             {{ __('Materials') }}
                         </flux:navlist.item>
-                    @endcan
+                    @endcan --}}
 
                     @can('viewMaterialRequests', App\Models\User::class)
                         <flux:navlist.item icon="inbox-stack" :href="route('material-requests.index')" :current="request()->routeIs('material-requests.*')" wire:navigate>

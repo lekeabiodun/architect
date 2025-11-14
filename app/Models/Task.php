@@ -130,6 +130,14 @@ class Task extends Model
     }
 
     /**
+     * Get all time entries for this task
+     */
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
+    /**
      * Toggle task status (for circle click)
      */
     public function toggleStatus(): void

@@ -2,13 +2,13 @@
 
 namespace App\Livewire\Material;
 
-use App\Models\BillOfQuantity;
 use App\Models\MaterialRequest as MaterialRequestModel;
 use App\Models\Project;
-use App\Models\Phase;
-use App\Models\Task;
+use App\Models\BillOfQuantity;
+use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Flux\Flux;
 
 class MaterialRequest extends Component
 {
@@ -31,7 +31,7 @@ class MaterialRequest extends Component
     public $request_required_date = '';
     public $request_purpose = '';
     public $request_justification = '';
-    
+
     // BOQ info for display
     public $availableBoqQuantity = 0;
     public $selectedBoqItem = null;
@@ -56,7 +56,7 @@ class MaterialRequest extends Component
         $this->availableBoqQuantity = 0;
         $this->selectedBoqItem = null;
         $this->boqItems = [];
-        
+
         if ($this->request_project_id) {
             $this->boqItems = BillOfQuantity::where('project_id', $this->request_project_id)
                 ->where('requestable_quantity', '>', 0)
@@ -117,10 +117,11 @@ class MaterialRequest extends Component
 
         // Get the selected BOQ item
         $boq = BillOfQuantity::find($this->request_bill_of_quantity_id);
-        
+
         // Check BOQ limits
         if (!$boq->canRequestQuantity($this->request_quantity)) {
-            $this->addError('request_quantity', 
+            $this->addError(
+                'request_quantity',
                 "Insufficient BOQ quantity. Available: {$boq->remaining_quantity} {$boq->unit}, Requested: {$this->request_quantity} {$boq->unit}"
             );
             return;
@@ -139,10 +140,10 @@ class MaterialRequest extends Component
             'status' => 'pending',
         ]);
 
-        $this->showRequestModal = false;
         $this->resetRequestForm();
+        $this->showRequestModal = false;
 
-        session()->flash('message', 'Material request submitted successfully');
+        Flux::toast('Material request submitted successfully', variant: 'success');
     }
 
     public function approveRequest($requestId)
@@ -158,7 +159,8 @@ class MaterialRequest extends Component
         if ($request->bill_of_quantity_id) {
             $boq = $request->billOfQuantity;
             if (!$boq->canRequestQuantity($this->approved_quantity)) {
-                $this->addError('approved_quantity', 
+                $this->addError(
+                    'approved_quantity',
                     "Insufficient BOQ quantity. Available: {$boq->remaining_quantity} {$boq->unit}, Requested: {$this->approved_quantity} {$boq->unit}"
                 );
                 return;
@@ -176,8 +178,9 @@ class MaterialRequest extends Component
         $this->approved_quantity = '';
         $this->approval_notes = '';
         $this->showApproveModal = false;
+        $this->resetApprovalForm();
 
-        session()->flash('message', 'Request approved successfully');
+        Flux::toast('Request approved successfully', variant: 'success');
     }
 
     public function rejectRequest($requestId)
@@ -199,8 +202,9 @@ class MaterialRequest extends Component
         $this->selectedRequest = null;
         $this->approval_notes = '';
         $this->showRejectModal = false;
+        $this->resetApprovalForm();
 
-        session()->flash('message', 'Request rejected');
+        Flux::toast('Request rejected', variant: 'warning');
     }
 
     public function disburseRequest($requestId)
@@ -218,8 +222,9 @@ class MaterialRequest extends Component
         $this->disbursed_quantity = '';
         $this->disbursement_notes = '';
         $this->showDisburseModal = false;
+        $this->resetDisbursementForm();
 
-        session()->flash('message', 'Materials disbursed successfully');
+        Flux::toast('Materials disbursed successfully', variant: 'success');
     }
 
     public function confirmRequest($requestId)
@@ -234,10 +239,10 @@ class MaterialRequest extends Component
         $request->confirm(auth()->user(), $this->confirmation_notes);
 
         $this->selectedRequest = null;
-        $this->confirmation_notes = '';
         $this->showConfirmModal = false;
+        $this->resetConfirmationForm();
 
-        session()->flash('message', 'Delivery confirmed successfully');
+        Flux::toast('Delivery confirmed successfully', variant: 'success');
     }
 
     public function openApproveModal($requestId)
@@ -296,6 +301,26 @@ class MaterialRequest extends Component
         $this->availableBoqQuantity = 0;
         $this->selectedBoqItem = null;
         $this->boqItems = [];
+    }
+
+    private function resetApprovalForm()
+    {
+        $this->selectedRequest = null;
+        $this->approved_quantity = '';
+        $this->approval_notes = '';
+    }
+
+    private function resetDisbursementForm()
+    {
+        $this->selectedRequest = null;
+        $this->disbursed_quantity = '';
+        $this->disbursement_notes = '';
+    }
+
+    private function resetConfirmationForm()
+    {
+        $this->selectedRequest = null;
+        $this->confirmation_notes = '';
     }
 
     public function render()

@@ -7,7 +7,10 @@
                     <flux:heading size="lg">{{ $project->name }}</flux:heading>
                 </div>
                 @can('update', $project)
-                <flux:button variant="primary" wire:click="openPhaseModal" icon="plus">Add Phase</flux:button>
+                <div class="flex items-center gap-4">
+                    <flux:button variant="primary" wire:click="openPhaseModal" icon="plus">Add Phase</flux:button>
+                    <flux:button variant="primary" href="{{ route('projects.bill-of-quantities', $project->id) }}" icon="wrench">Manage BOQ</flux:button>
+                </div>
                 @endcan
             </div>
 

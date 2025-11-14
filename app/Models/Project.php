@@ -87,6 +87,11 @@ class Project extends Model
         return $this->hasMany(MaterialRequest::class);
     }
 
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
     public function billOfQuantities(): HasMany
     {
         return $this->hasMany(BillOfQuantity::class)->orderBy('order');

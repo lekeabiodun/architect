@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('task_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->text('comment');
+            $table->json('media_files')->nullable();
+            $table->string('media_type')->nullable(); // image, video, or mixed
             $table->timestamps();
         });
     }

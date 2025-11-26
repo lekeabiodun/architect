@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('unit'); // units: kg, m3, pieces, liters, etc.
             $table->decimal('unit_cost', 15, 2)->default(0);
+            $table->string('currency', 3)->default('USD');
             $table->string('category')->nullable(); // cement, steel, lumber, electrical, etc.
             $table->integer('reorder_level')->default(0); // Minimum stock level
             $table->text('specifications')->nullable(); // Technical specs

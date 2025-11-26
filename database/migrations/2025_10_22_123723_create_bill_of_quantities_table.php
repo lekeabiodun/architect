@@ -20,11 +20,14 @@ return new class extends Migration
             $table->decimal('quantity', 12, 2);
             $table->decimal('unit_rate', 12, 2);
             $table->decimal('total_amount', 12, 2);
+            $table->decimal('requestable_quantity', 12, 2)->default(0);
+            $table->decimal('consumed_quantity', 12, 2)->default(0);
+            $table->decimal('remaining_quantity', 12, 2)->virtualAs('requestable_quantity - consumed_quantity');
             $table->string('category')->nullable();
             $table->text('notes')->nullable();
             $table->integer('order')->default(0);
             $table->timestamps();
-            
+
             $table->index(['project_id', 'category']);
             $table->index(['project_id', 'order']);
         });

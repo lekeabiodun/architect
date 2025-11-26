@@ -27,6 +27,7 @@ return new class extends Migration
             // Budget
             $table->decimal('estimated_budget', 15, 2)->nullable();
             $table->decimal('actual_cost', 15, 2)->default(0);
+            $table->decimal('bill_of_quantities_total', 12, 2)->default(0);
 
             // Progress
             $table->decimal('overall_progress', 5, 2)->default(0); // 0-100%

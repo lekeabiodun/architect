@@ -5,19 +5,10 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// })->name('home');
-
-// Route::view('dashboard', 'dashboard')
-//     ->middleware(['auth', 'verified'])
-//     ->name('dashboard');
-
-Route::redirect('/', 'dashboard');
 Route::group([
     'middleware' => ['auth', 'verified'],
 ], function () {
-    Route::get('/', Dashboard::class)->name('dashboard.index');
+    Route::get('/', Dashboard::class)->name('dashboard');
 
     // Projects
     Route::get('/projects', App\Livewire\Project\Index::class)->name('projects.index');
@@ -71,4 +62,4 @@ Route::middleware(['auth'])->group(function () {
         ->name('two-factor.show');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

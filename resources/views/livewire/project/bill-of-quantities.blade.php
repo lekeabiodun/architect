@@ -125,11 +125,8 @@
             </div>
 
             <form wire:submit="save" class="space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <flux:input wire:model="item_code" label="Item Code" placeholder="e.g., CON-001" />
-                    <flux:input wire:model="order" type="number" label="Order" required />
-                </div>
-                
+                <flux:input wire:model="item_code" label="Item Code" placeholder="e.g., CON-001" />
+
                 <flux:input wire:model="description" label="Description" placeholder="e.g., Ready Mix Concrete" required />
                 
                 <div class="grid grid-cols-3 gap-4">

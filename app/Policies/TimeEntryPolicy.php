@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\TimeEntry;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class TimeEntryPolicy
 {
@@ -44,9 +43,9 @@ class TimeEntryPolicy
      */
     public function create(User $user): bool
     {
-        // All authenticated users can create their own time entries
-        // except clients who typically don't track time
-        return !$user->isClient() && $user->hasPermissionTo('create time entries');
+        // All authenticated staff may create their own time entries;
+        // clients don't track time.
+        return ! $user->isClient();
     }
 
     /**
@@ -57,7 +56,7 @@ class TimeEntryPolicy
         // Users can only update their own entries
         if ($timeEntry->user_id === $user->id) {
             // Allow updating only if not clocked out yet (for notes, project, etc.)
-            return !$timeEntry->clock_out || $user->canManageTimeTracking();
+            return ! $timeEntry->clock_out || $user->canManageTimeTracking();
         }
 
         // Admins can update any time entry
@@ -99,14 +98,8 @@ class TimeEntryPolicy
      */
     public function clockIn(User $user): bool
     {
-        return true;
-        // Users can clock in if they don't have an active entry
-        // and they're not clients
-        if ($user->isClient()) {
-            return false;
-        }
-
-        return !TimeEntry::getActiveForUser($user->id) && $user->hasPermissionTo('clock in');
+        // Clients don't track time; the "active entry" guard lives in the component.
+        return ! $user->isClient();
     }
 
     /**
@@ -114,13 +107,8 @@ class TimeEntryPolicy
      */
     public function clockOut(User $user, TimeEntry $timeEntry): bool
     {
-        return true;
-        // Users can only clock out their own active entries
-        if ($timeEntry->user_id !== $user->id) {
-            return $user->canManageTimeTracking();
-        }
-
-        return $timeEntry->isActive() && $user->hasPermissionTo('clock out');
+        // Users may clock out their own entry; admins may clock out anyone's.
+        return $timeEntry->user_id === $user->id || $user->canManageTimeTracking();
     }
 
     /**

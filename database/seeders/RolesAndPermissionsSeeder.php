@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -54,6 +53,12 @@ class RolesAndPermissionsSeeder extends Seeder
             // Budget permissions
             'view budget',
             'manage budget',
+
+            // Bill of Quantities permissions
+            'view boq',
+            'create boq',
+            'edit boq',
+            'delete boq',
 
             // Team permissions
             'manage team members',
@@ -109,6 +114,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'disburse materials',
             'view budget',
             'manage budget',
+            'view boq',
+            'create boq',
+            'edit boq',
+            'delete boq',
             'view team members',
             'upload documents',
             'view documents',
@@ -131,6 +140,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage inventory',
             'create material requests',
             'view budget',
+            'view boq',
             'upload documents',
             'view documents',
             'add comments',
@@ -148,6 +158,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view materials',
             'view inventory',
             'confirm material delivery',
+            'view boq',
             'upload documents',
             'view documents',
             'add comments',
@@ -166,6 +177,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view inventory',
             'create material requests',
             'view budget',
+            'view boq',
             'upload documents',
             'view documents',
             'add comments',
@@ -184,6 +196,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view inventory',
             'create material requests',
             'view budget',
+            'view boq',
             'upload documents',
             'view documents',
             'add comments',
@@ -204,6 +217,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'disburse materials',
             'view budget',
             'manage budget',
+            'view boq',
+            'create boq',
+            'edit boq',
+            'delete boq',
             'view team members',
             'manage team members',
             'view documents',
@@ -225,6 +242,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'approve material requests',
             'disburse materials',
             'view budget',
+            'view boq',
+            'create boq',
+            'edit boq',
+            'delete boq',
             'view team members',
             'upload documents',
             'view documents',

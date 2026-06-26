@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 class LeaveRequest extends Model
 {
@@ -110,7 +110,7 @@ class LeaveRequest extends Model
      */
     public function calculateDuration(): float
     {
-        if (!$this->start_date || !$this->end_date) {
+        if (! $this->start_date || ! $this->end_date) {
             return 0;
         }
 
@@ -120,7 +120,7 @@ class LeaveRequest extends Model
         // Calculate business days (excluding weekends)
         $duration = 0;
         while ($start <= $end) {
-            if (!$start->isWeekend()) {
+            if (! $start->isWeekend()) {
                 $duration++;
             }
             $start->addDay();
@@ -147,11 +147,25 @@ class LeaveRequest extends Model
     }
 
     /**
+     * Return the deducted days to the balance (e.g. when an approved request is removed).
+     */
+    private function restoreLeaveBalance(): void
+    {
+        $balance = LeaveBalance::where([
+            'user_id' => $this->user_id,
+            'leave_type' => $this->leave_type,
+            'year' => $this->start_date->year,
+        ])->first();
+
+        $balance?->returnBalance($this->duration_days);
+    }
+
+    /**
      * Check if the user has sufficient leave balance.
      */
     public function hasSufficientBalance(): bool
     {
-        if (!$this->start_date) {
+        if (! $this->start_date) {
             return false;
         }
 
@@ -161,7 +175,7 @@ class LeaveRequest extends Model
             'year' => $this->start_date->year,
         ])->first();
 
-        if (!$balance) {
+        if (! $balance) {
             return false;
         }
 
@@ -173,7 +187,7 @@ class LeaveRequest extends Model
      */
     public function getAvailableBalanceAttribute(): float
     {
-        if (!$this->start_date) {
+        if (! $this->start_date) {
             return 0;
         }
 
@@ -242,6 +256,13 @@ class LeaveRequest extends Model
 
         static::saving(function ($leaveRequest) {
             $leaveRequest->duration_days = $leaveRequest->calculateDuration();
+        });
+
+        static::deleting(function ($leaveRequest) {
+            // Return deducted days to the balance when an approved request is removed.
+            if ($leaveRequest->isApproved()) {
+                $leaveRequest->restoreLeaveBalance();
+            }
         });
     }
 }

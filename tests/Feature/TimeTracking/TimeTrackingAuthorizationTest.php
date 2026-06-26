@@ -2,6 +2,7 @@
 
 use App\Livewire\TimeTracking\AdminTimesheet;
 use App\Livewire\TimeTracking\LeaveApproval;
+use App\Models\LeaveRequest;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -51,6 +52,32 @@ it('forbids a client from clocking in or requesting leave', function () {
 
     expect($client->can('clockIn', App\Models\TimeEntry::class))->toBeFalse()
         ->and($client->can('create', App\Models\LeaveRequest::class))->toBeFalse();
+});
+
+it('bulk-approves without error and skips the approver\'s own pending request', function () {
+    $manager = userWithRole('manager');
+    $worker = userWithRole('worker');
+
+    // The manager's own pending request must NOT be self-approved.
+    $ownRequest = LeaveRequest::create([
+        'user_id' => $manager->id,
+        'leave_type' => 'vacation',
+        'start_date' => now()->addDays(3)->toDateString(),
+        'end_date' => now()->addDays(4)->toDateString(),
+        'reason' => 'Personal',
+        'status' => 'pending',
+        'duration_days' => 2,
+    ]);
+
+    actingAs($manager);
+
+    // Previously this threw ArgumentCountError (500) because the policy's
+    // approve() ability requires a request instance.
+    Livewire::test(LeaveApproval::class)
+        ->call('bulkApprove')
+        ->assertHasNoErrors();
+
+    expect($ownRequest->fresh()->status)->toBe('pending');
 });
 
 it('does not throw when a worker without time-tracking permissions evaluates the nav gates', function () {

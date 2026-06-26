@@ -6,9 +6,9 @@
                     <flux:button variant="ghost" icon="arrow-left" href="{{ route('projects.show', $project->id) }}">Back</flux:button>
                     <flux:heading size="lg">Bill of Quantities - {{ $project->name }}</flux:heading>
                 </div>
-                @can('update', $project)
+                @if($canCreate)
                 <flux:button variant="primary" wire:click="openModal" icon="plus">Add Item</flux:button>
-                @endcan
+                @endif
             </div>
 
             <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -80,10 +80,12 @@
                                         </td>
                                         <td class="py-3 px-4">
                                             <div class="flex items-center justify-center gap-1">
-                                                @can('update', $project)
+                                                @can('update', $item)
                                                     <flux:button size="sm" variant="ghost" icon="arrow-up" wire:click="moveUp({{ $item->id }})" title="Move Up"></flux:button>
                                                     <flux:button size="sm" variant="ghost" icon="arrow-down" wire:click="moveDown({{ $item->id }})" title="Move Down"></flux:button>
                                                     <flux:button size="sm" variant="ghost" icon="pencil" wire:click="openEditModal({{ $item->id }})" title="Edit"></flux:button>
+                                                @endcan
+                                                @can('delete', $item)
                                                     <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $item->id }})" wire:confirm="Delete this item?" title="Delete"></flux:button>
                                                 @endcan
                                             </div>
@@ -106,9 +108,9 @@
                     <flux:icon.wrench class="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <flux:heading size="lg" class="mb-2">No Bill of Quantities items yet</flux:heading>
                     <p class="text-gray-500 mb-4">Add items to create your bill of quantities</p>
-                    @can('update', $project)
+                    @if($canCreate)
                         <flux:button variant="primary" wire:click="openModal" icon="plus">Add First Item</flux:button>
-                    @endcan
+                    @endif
                 </flux:card>
             @endif
         </div>

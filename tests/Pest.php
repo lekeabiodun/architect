@@ -13,6 +13,11 @@
 
 pest()->extend(Tests\TestCase::class)
     ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->beforeEach(function () {
+        // Roles and permissions must exist for the app's authorization gates
+        // (used throughout the UI, e.g. the sidebar) to resolve in tests.
+        $this->seed(Database\Seeders\RolesAndPermissionsSeeder::class);
+    })
     ->in('Feature');
 
 /*

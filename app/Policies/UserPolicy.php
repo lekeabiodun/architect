@@ -2,9 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\Task;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class UserPolicy
 {
@@ -15,176 +13,119 @@ class UserPolicy
         }
     }
 
-    public function viewAny(User $user): bool
-    {
-        return $user->hasPermissionTo('view tasks');
-    }
-
-    public function view(User $user, Task $task): bool
-    {
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        if ($user->isWorker()) {
-            return $task->assigned_to === $user->id;
-        }
-
-        $project = $task->phase->project;
-
-        return $project->users()->where('user_id', $user->id)->exists() ||
-            $project->manager_id === $user->id ||
-            $task->assigned_to === $user->id;
-    }
-
-    public function create(User $user): bool
-    {
-        return $user->hasPermissionTo('create tasks');
-    }
-
-    public function update(User $user, Task $task): bool
-    {
-        // Super admin can update all
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        // Workers cannot edit tasks
-        if ($user->isWorker()) {
-            return false;
-        }
-
-        $project = $task->phase->project;
-
-        // Project manager can update
-        if ($project->manager_id === $user->id) {
-            return true;
-        }
-
-        // Check permission and project assignment
-        return $user->hasPermissionTo('edit tasks') &&
-            $project->users()->where('user_id', $user->id)->exists();
-    }
-
-    public function delete(User $user, Task $task): bool
-    {
-        $project = $task->phase->project;
-
-        return $user->isSuperAdmin() ||
-            ($user->hasPermissionTo('delete tasks') && $project->manager_id === $user->id);
-    }
-
-    public function restore(User $user, Task $task): bool
-    {
-        return $user->isSuperAdmin();
-    }
-
-    public function forceDelete(User $user, Task $task): bool
-    {
-        return $user->isSuperAdmin();
-    }
-
-    public function complete(User $user, Task $task): bool
-    {
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        return $task->assigned_to === $user->id || $this->update($user, $task);
-    }
-
-    public function inspect(User $user, Task $task): bool
-    {
-        if (!$user->canInspectTasks()) {
-            return false;
-        }
-
-        $project = $task->phase->project;
-
-        return $user->isSuperAdmin() ||
-            $project->users()->where('user_id', $user->id)->exists();
-    }
-
-    public function addMedia(User $user, Task $task): bool
-    {
-        if ($user->isWorker() && $task->assigned_to === $user->id) {
-            return true;
-        }
-
-        return $this->view($user, $task) && $user->hasPermissionTo('upload documents');
-    }
-
+    /**
+     * Determine whether the user can see the main dashboard.
+     */
     public function viewDashboard(User $user): bool
     {
-        return !$user->isWorker() && !$user->isClient() && !$user->isInspector();
+        return ! $user->isWorker() && ! $user->isClient() && ! $user->isInspector();
     }
 
+    /**
+     * Determine whether the user can see the projects section.
+     */
     public function viewProjects(User $user): bool
     {
         return $user->hasPermissionTo('view projects');
     }
 
+    /**
+     * Determine whether the user can see their personal task list.
+     */
     public function viewMyTasks(User $user): bool
     {
-        if ($user->isClient()) return false;
+        if ($user->isClient()) {
+            return false;
+        }
 
         return $user->hasPermissionTo('view tasks');
     }
 
+    /**
+     * Determine whether the user can see the materials section.
+     */
     public function viewMaterials(User $user): bool
     {
-        if ($user->isClient()) return false;
+        if ($user->isClient()) {
+            return false;
+        }
 
         return $user->hasPermissionTo('view materials');
     }
 
+    /**
+     * Determine whether the user can see the material requests section.
+     */
     public function viewMaterialRequests(User $user): bool
     {
-        if ($user->isClient()) return false;
+        if ($user->isClient()) {
+            return false;
+        }
 
         return $user->hasPermissionTo('create material requests');
     }
 
+    /**
+     * Determine whether the user can see the inspection section.
+     */
     public function inspectTasks(User $user): bool
     {
-        if ($user->isClient()) return false;
+        if ($user->isClient()) {
+            return false;
+        }
 
         return $user->hasPermissionTo('inspect tasks');
     }
 
+    /**
+     * Determine whether the user can see the team members section.
+     */
     public function viewTeamMembers(User $user): bool
     {
-        if ($user->isClient()) return false;
+        if ($user->isClient()) {
+            return false;
+        }
 
         return $user->hasPermissionTo('view team members');
     }
 
-    public function createTimeEntries(User $user): bool
-    {
-        return true;
-        return $user->hasPermissionTo('create time entries');
-    }
-
-    public function manageTimeTracking(User $user): bool
-    {
-        return false;
-        return $user->hasPermissionTo('manage time tracking');
-    }
-
-    public function createLeaveRequests(User $user): bool
-    {
-        return true;
-        // return $user->hasPermissionTo('create leave requests');
-    }
-
-    public function approveLeave(User $user): bool
-    {
-        return false;
-        return $user->hasPermissionTo('approve leave');
-    }
-
+    /**
+     * Determine whether the user can create/edit/delete team members.
+     */
     public function manageTeamMembers(User $user): bool
     {
         return $user->hasPermissionTo('manage team members');
+    }
+
+    /**
+     * Determine whether the user can clock time in/out (self-service).
+     */
+    public function createTimeEntries(User $user): bool
+    {
+        return ! $user->isClient();
+    }
+
+    /**
+     * Determine whether the user can administer timesheets.
+     */
+    public function manageTimeTracking(User $user): bool
+    {
+        return $user->canManageTimeTracking();
+    }
+
+    /**
+     * Determine whether the user can submit leave requests (self-service).
+     */
+    public function createLeaveRequests(User $user): bool
+    {
+        return ! $user->isClient();
+    }
+
+    /**
+     * Determine whether the user can approve/reject leave requests.
+     */
+    public function approveLeave(User $user): bool
+    {
+        return $user->canApproveLeave();
     }
 }

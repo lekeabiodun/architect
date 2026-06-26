@@ -99,13 +99,15 @@ class Project extends Model
 
     public function calculateProgress(): float
     {
-        $totalWeight = $this->phases->sum('weight');
+        // Query fresh so a cached phases relation can't produce stale progress.
+        $phases = $this->phases()->get();
+        $totalWeight = $phases->sum('weight');
 
         if ($totalWeight == 0) {
             return 0;
         }
 
-        $weightedProgress = $this->phases->sum(function ($phase) {
+        $weightedProgress = $phases->sum(function ($phase) {
             return ($phase->progress * $phase->weight) / 100;
         });
 
@@ -120,7 +122,7 @@ class Project extends Model
 
     public function getBudgetVarianceAttribute(): float
     {
-        if (!$this->estimated_budget) {
+        if (! $this->estimated_budget) {
             return 0;
         }
 
@@ -129,7 +131,7 @@ class Project extends Model
 
     public function getBudgetVariancePercentageAttribute(): float
     {
-        if (!$this->estimated_budget || $this->estimated_budget == 0) {
+        if (! $this->estimated_budget || $this->estimated_budget == 0) {
             return 0;
         }
 
@@ -138,12 +140,12 @@ class Project extends Model
 
     public function isOnSchedule(): bool
     {
-        if (!$this->planned_end_date) {
+        if (! $this->planned_end_date) {
             return true;
         }
 
         if ($this->status === 'completed') {
-            return !$this->actual_end_date || $this->actual_end_date <= $this->planned_end_date;
+            return ! $this->actual_end_date || $this->actual_end_date <= $this->planned_end_date;
         }
 
         return now() <= $this->planned_end_date;
@@ -177,7 +179,7 @@ class Project extends Model
 
     public function getBudgetUtilizationAttribute(): float
     {
-        if (!$this->estimated_budget || $this->estimated_budget == 0) {
+        if (! $this->estimated_budget || $this->estimated_budget == 0) {
             return 0;
         }
 
@@ -197,6 +199,6 @@ class Project extends Model
         $value = is_numeric($amount) ? (float) $amount : 0;
         $sign = $value < 0 ? '-' : '';
 
-        return $sign . $this->currency_symbol . number_format(abs($value), $decimals);
+        return $sign.$this->currency_symbol.number_format(abs($value), $decimals);
     }
 }

@@ -73,26 +73,26 @@ class Phase extends Model
     public function calculateProgress(): float
     {
         $totalTasks = $this->tasks()->count();
-        
+
         if ($totalTasks == 0) {
             return 0;
         }
 
-        // Check if tasks have weights
-        $totalWeight = $this->tasks->sum('weight');
-        
+        // Check if tasks have weights (query fresh so cached relations don't go stale)
+        $totalWeight = $this->tasks()->sum('weight');
+
         if ($totalWeight > 0) {
             // Weighted calculation
             $completedWeight = $this->tasks()
                 ->where('status', 'completed')
                 ->sum('weight');
-            
+
             return round(($completedWeight / $totalWeight) * 100, 2);
         }
 
         // Simple count-based calculation
         $completedTasks = $this->tasks()->where('status', 'completed')->count();
-        
+
         return round(($completedTasks / $totalTasks) * 100, 2);
     }
 
@@ -120,7 +120,7 @@ class Phase extends Model
         } else {
             $this->status = 'pending';
         }
-        
+
         $this->save();
     }
 }

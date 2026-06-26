@@ -2,44 +2,56 @@
 
 namespace App\Livewire\TimeTracking;
 
+use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\User;
-use App\Models\LeaveBalance;
+use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Flux\Flux;
-use Carbon\Carbon;
 
 class LeaveApproval extends Component
 {
     use WithPagination;
 
     public $showApproveModal = false;
+
     public $showRejectModal = false;
+
     public $showViewModal = false;
+
     public $selectedRequest = null;
 
     // Filters
     public $status_filter = 'pending';
+
     public $user_filter = '';
+
     public $leave_type_filter = '';
+
     public $date_range_filter = 'month';
+
     public $custom_start_date = '';
+
     public $custom_end_date = '';
 
     // Approval/Rejection fields
     public $approval_notes = '';
+
     public $rejection_reason = '';
 
     // Summary data
     public $pendingCount = 0;
+
     public $approvedCount = 0;
+
     public $rejectedCount = 0;
 
     protected $queryString = ['status_filter', 'user_filter', 'leave_type_filter', 'date_range_filter'];
 
     public function mount()
     {
+        $this->authorize('viewAny', LeaveRequest::class);
+
         $this->custom_start_date = now()->startOfMonth()->format('Y-m-d');
         $this->custom_end_date = now()->endOfMonth()->format('Y-m-d');
     }
@@ -133,7 +145,7 @@ class LeaveApproval extends Component
 
     public function approveRequest()
     {
-        if (!$this->selectedRequest) {
+        if (! $this->selectedRequest) {
             return;
         }
 
@@ -144,8 +156,9 @@ class LeaveApproval extends Component
         ]);
 
         // Check if user has sufficient balance
-        if (!$this->selectedRequest->hasSufficientBalance()) {
+        if (! $this->selectedRequest->hasSufficientBalance()) {
             $this->addError('approval_notes', 'User does not have sufficient leave balance for this request.');
+
             return;
         }
 
@@ -168,7 +181,7 @@ class LeaveApproval extends Component
 
     public function rejectRequest()
     {
-        if (!$this->selectedRequest) {
+        if (! $this->selectedRequest) {
             return;
         }
 
@@ -189,28 +202,43 @@ class LeaveApproval extends Component
 
     public function bulkApprove()
     {
-        $this->authorize('approve', LeaveRequest::class);
+        $this->authorize('approveAny', LeaveRequest::class);
+
+        $user = auth()->user();
 
         $requests = LeaveRequest::pending()
             ->dateRange($this->custom_start_date, $this->custom_end_date)
-            ->when($this->user_filter, fn($q) => $q->where('user_id', $this->user_filter))
-            ->when($this->leave_type_filter, fn($q) => $q->where('leave_type', $this->leave_type_filter))
+            ->when($this->user_filter, fn ($q) => $q->where('user_id', $this->user_filter))
+            ->when($this->leave_type_filter, fn ($q) => $q->where('leave_type', $this->leave_type_filter))
             ->get();
 
         $approvedCount = 0;
         $rejectedCount = 0;
+        $skippedCount = 0;
 
         foreach ($requests as $request) {
+            // Enforce per-request rules (e.g. cannot approve your own request).
+            if ($user->cannot('approve', $request)) {
+                $skippedCount++;
+
+                continue;
+            }
+
             if ($request->hasSufficientBalance()) {
-                $request->approve(auth()->user());
+                $request->approve($user);
                 $approvedCount++;
             } else {
-                $request->reject(auth()->user(), 'Insufficient leave balance');
+                $request->reject($user, 'Insufficient leave balance');
                 $rejectedCount++;
             }
         }
 
         $message = "Bulk processed: {$approvedCount} approved, {$rejectedCount} rejected";
+
+        if ($skippedCount > 0) {
+            $message .= ", {$skippedCount} skipped";
+        }
+
         Flux::toast($message, variant: 'success');
     }
 
@@ -219,9 +247,9 @@ class LeaveApproval extends Component
         $requests = LeaveRequest::query()
             ->with(['user', 'approver'])
             ->dateRange($this->custom_start_date, $this->custom_end_date)
-            ->when($this->status_filter, fn($q) => $q->where('status', $this->status_filter))
-            ->when($this->user_filter, fn($q) => $q->where('user_id', $this->user_filter))
-            ->when($this->leave_type_filter, fn($q) => $q->where('leave_type', $this->leave_type_filter))
+            ->when($this->status_filter, fn ($q) => $q->where('status', $this->status_filter))
+            ->when($this->user_filter, fn ($q) => $q->where('user_id', $this->user_filter))
+            ->when($this->leave_type_filter, fn ($q) => $q->where('leave_type', $this->leave_type_filter))
             ->latest()
             ->get();
 
@@ -243,7 +271,7 @@ class LeaveApproval extends Component
             ];
         }
 
-        $filename = 'leave_requests_' . $this->custom_start_date . '_to_' . $this->custom_end_date . '.csv';
+        $filename = 'leave_requests_'.$this->custom_start_date.'_to_'.$this->custom_end_date.'.csv';
 
         $this->dispatch('downloadCsv', [
             'filename' => $filename,

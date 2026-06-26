@@ -2,50 +2,70 @@
 
 namespace App\Livewire\Material;
 
+use App\Models\BillOfQuantity;
 use App\Models\MaterialRequest as MaterialRequestModel;
 use App\Models\Project;
-use App\Models\BillOfQuantity;
 use App\Models\User;
+use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Flux\Flux;
 
 class MaterialRequest extends Component
 {
     use WithPagination;
 
     public $showRequestModal = false;
+
     public $showApproveModal = false;
+
     public $showRejectModal = false;
+
     public $showDisburseModal = false;
+
     public $showConfirmModal = false;
+
     public $selectedRequest = null;
 
     // Request fields
     public $request_material_id = '';
+
     public $request_project_id = '';
+
     public $request_bill_of_quantity_id = '';
+
     public $request_phase_id = '';
+
     public $request_task_id = '';
+
     public $request_quantity = '';
+
     public $request_required_date = '';
+
     public $request_purpose = '';
+
     public $request_justification = '';
 
     // BOQ info for display
     public $availableBoqQuantity = 0;
+
     public $selectedBoqItem = null;
+
     public $boqItems = [];
 
     // Approval fields
     public $approved_quantity = '';
+
     public $approval_notes = '';
+
     public $disbursed_quantity = '';
+
     public $disbursement_notes = '';
+
     public $confirmation_notes = '';
 
     // Filters
     public $status_filter = '';
+
     public $project_filter = '';
 
     protected $queryString = ['status_filter', 'project_filter'];
@@ -107,6 +127,8 @@ class MaterialRequest extends Component
 
     public function saveRequest()
     {
+        $this->authorize('create', MaterialRequestModel::class);
+
         $this->validate([
             'request_project_id' => 'required|exists:projects,id',
             'request_bill_of_quantity_id' => 'required|exists:bill_of_quantities,id',
@@ -119,11 +141,12 @@ class MaterialRequest extends Component
         $boq = BillOfQuantity::find($this->request_bill_of_quantity_id);
 
         // Check BOQ limits
-        if (!$boq->canRequestQuantity($this->request_quantity)) {
+        if (! $boq->canRequestQuantity($this->request_quantity)) {
             $this->addError(
                 'request_quantity',
                 "Insufficient BOQ quantity. Available: {$boq->remaining_quantity} {$boq->unit}, Requested: {$this->request_quantity} {$boq->unit}"
             );
+
             return;
         }
 
@@ -158,11 +181,12 @@ class MaterialRequest extends Component
         // Check BOQ limits if BOQ is selected
         if ($request->bill_of_quantity_id) {
             $boq = $request->billOfQuantity;
-            if (!$boq->canRequestQuantity($this->approved_quantity)) {
+            if (! $boq->canRequestQuantity($this->approved_quantity)) {
                 $this->addError(
                     'approved_quantity',
                     "Insufficient BOQ quantity. Available: {$boq->remaining_quantity} {$boq->unit}, Requested: {$this->approved_quantity} {$boq->unit}"
                 );
+
                 return;
             }
         }
@@ -340,7 +364,7 @@ class MaterialRequest extends Component
 
         // Filter by user role
         $user = auth()->user();
-        if (!$user->isSuperAdmin()) {
+        if (! $user->isSuperAdmin()) {
             // Show requests for projects user is assigned to
             $projectIds = $user->projects()->pluck('projects.id');
             $query->whereIn('project_id', $projectIds);

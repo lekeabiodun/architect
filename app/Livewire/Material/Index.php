@@ -2,9 +2,8 @@
 
 namespace App\Livewire\Material;
 
-use App\Models\Material;
 use App\Models\Inventory;
-use App\Models\Project;
+use App\Models\Material;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -13,29 +12,44 @@ class Index extends Component
     use WithPagination;
 
     public $showMaterialModal = false;
+
     public $showInventoryModal = false;
+
     public $editingMaterial = null;
 
     // Material fields
     public $material_name = '';
+
     public $material_code = '';
+
     public $material_description = '';
+
     public $material_unit = 'pieces';
+
     public $material_unit_cost = '';
+
     public $material_currency = 'USD';
+
     public $material_category = 'cement';
+
     public $material_reorder_level = 100;
+
     public $material_specifications = '';
 
     // Inventory fields
     public $inventory_material_id = '';
+
     public $inventory_project_id = '';
+
     public $inventory_quantity = '';
+
     public $inventory_location = '';
+
     public $inventory_notes = '';
 
     // Filters
     public $search = '';
+
     public $category_filter = '';
 
     protected $queryString = ['search', 'category_filter'];
@@ -69,7 +83,7 @@ class Index extends Component
     {
         $this->validate([
             'material_name' => 'required|string|max:255',
-            'material_code' => 'required|string|max:50|unique:materials,code,' . ($this->editingMaterial ?? 'NULL'),
+            'material_code' => 'required|string|max:50|unique:materials,code,'.($this->editingMaterial ?? 'NULL'),
             'material_unit' => 'required|string',
             'material_unit_cost' => 'required|numeric|min:0',
             'material_currency' => 'required|in:USD,NGN',
@@ -119,6 +133,8 @@ class Index extends Component
 
     public function saveInventory()
     {
+        $this->authorize('create', Inventory::class);
+
         $this->validate([
             'inventory_material_id' => 'required|exists:materials,id',
             'inventory_project_id' => 'required|exists:projects,id',

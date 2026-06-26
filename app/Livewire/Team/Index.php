@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Team;
 
-use App\Models\User;
 use App\Models\LeaveBalance;
+use App\Models\User;
 use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -13,16 +13,24 @@ class Index extends Component
     use WithPagination;
 
     public $showCreateModal = false;
+
     public $showEditModal = false;
+
     public $showLeaveBalanceModal = false;
+
     public $editingUser = null;
+
     public $selectedUserForLeave = null;
 
     // Form fields
     public $name = '';
+
     public $email = '';
+
     public $password = '';
+
     public $password_confirmation = '';
+
     public $role = 'contractor';
 
     // Leave balance form fields
@@ -34,14 +42,22 @@ class Index extends Component
 
     // Filters
     public $search = '';
+
     public $roleFilter = '';
+
     public $sortBy = 'created_at';
+
     public $sortDirection = 'desc';
 
     protected $queryString = [
         'search' => ['except' => ''],
         'roleFilter' => ['except' => ''],
     ];
+
+    public function mount()
+    {
+        $this->authorize('viewTeamMembers', User::class);
+    }
 
     public function render()
     {
@@ -53,8 +69,8 @@ class Index extends Component
             }])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
+                    $q->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('email', 'like', '%'.$this->search.'%');
                 });
             })
             ->when($this->roleFilter, function ($query) {
@@ -91,6 +107,8 @@ class Index extends Component
 
     public function createUser()
     {
+        $this->authorize('manageTeamMembers', User::class);
+
         $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -113,9 +131,11 @@ class Index extends Component
 
     public function updateUser()
     {
+        $this->authorize('manageTeamMembers', User::class);
+
         $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $this->editingUser,
+            'email' => 'required|email|unique:users,email,'.$this->editingUser,
             'role' => 'required|in:project_manager,contractor,client,inspector',
         ];
 
@@ -147,9 +167,12 @@ class Index extends Component
 
     public function deleteUser($userId)
     {
+        $this->authorize('manageTeamMembers', User::class);
+
         // Prevent deleting the current user
         if ($userId == auth()->id()) {
             session()->flash('error', 'You cannot delete your own account!');
+
             return;
         }
 
@@ -202,9 +225,11 @@ class Index extends Component
 
     public function saveLeaveBalance()
     {
+        $this->authorize('manageTeamMembers', User::class);
+
         $this->validate([
             'leaveBalanceForm.leave_type' => 'required|string|in:vacation,sick,personal,bereavement,maternity,paternity',
-            'leaveBalanceForm.year' => 'required|integer|min:2020|max:' . (now()->year + 2),
+            'leaveBalanceForm.year' => 'required|integer|min:2020|max:'.(now()->year + 2),
             'leaveBalanceForm.balance_days' => 'required|numeric|min:0|max:365',
         ]);
 
@@ -225,7 +250,7 @@ class Index extends Component
 
     public function getCurrentLeaveBalanceProperty()
     {
-        if (!$this->selectedUserForLeave) {
+        if (! $this->selectedUserForLeave) {
             return null;
         }
 

@@ -7,14 +7,14 @@
         <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
-            <a href="{{ route('dashboard.index') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
+            <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
                 <x-app-logo />
             </a>
 
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     @can('viewDashboard', App\Models\User::class)
-                        <flux:navlist.item icon="home" :href="route('dashboard.index')" :current="request()->routeIs('dashboard.index')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                        <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     @endcan
                     
                     @can('viewProjects', App\Models\User::class)
@@ -48,7 +48,7 @@
                     @endcan
 
                     {{-- Time Tracking --}}
-                    {{-- @canany(['createTimeEntries', 'manageTimeTracking', 'createLeaveRequests', 'approveLeave'], App\Models\User::class) --}}
+                    @canany(['createTimeEntries', 'manageTimeTracking', 'createLeaveRequests', 'approveLeave'], App\Models\User::class)
                         <flux:navlist.group :heading="__('Time Tracking')" class="grid">
                             @can('createTimeEntries', App\Models\User::class)
                                 <flux:navlist.item icon="clock" :href="route('time-tracking.index')" :current="request()->routeIs('time-tracking.index')" wire:navigate>
@@ -74,7 +74,7 @@
                                 </flux:navlist.item>
                             @endcan
                         </flux:navlist.group>
-                    {{-- @endcanany --}}
+                    @endcanany
 
                     
                 </flux:navlist.group>

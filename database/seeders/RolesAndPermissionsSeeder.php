@@ -32,10 +32,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'assign tasks',
             'complete tasks',
 
-            // Inspection permissions
+            // Inspection permissions.
+            // A single capability: whoever can inspect can both pass and fail an inspection.
             'inspect tasks',
-            'approve inspections',
-            'fail inspections',
 
             // Material permissions
             'view materials',
@@ -73,16 +72,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'add comments',
             'view comments',
 
-            // Time tracking permissions
-            'clock in',
-            'clock out',
-            'view time entries',
-            'manage time entries',
-            'view leave requests',
-            'create leave requests',
-            'edit leave requests',
-            'approve leave requests',
-            'reject leave requests',
+            // Time tracking & leave permissions.
+            // Clocking in/out and submitting your own leave are self-service for
+            // all non-client staff (gated by role, no permission required).
+            // Only the admin capabilities below are permission-gated.
+            'manage time entries',   // view & administer everyone's timesheets
+            'approve leave requests', // approve/reject any leave request, view all
         ];
 
         foreach ($permissions as $permission) {
@@ -123,6 +118,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view documents',
             'add comments',
             'view comments',
+            'manage time entries',
+            'approve leave requests',
         ]);
 
         // 3. Contractor - Work on assigned projects
@@ -153,8 +150,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'view projects',
             'view tasks',
             'inspect tasks',
-            'approve inspections',
-            'fail inspections',
             'view materials',
             'view inventory',
             'confirm material delivery',
@@ -225,6 +220,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage team members',
             'view documents',
             'view comments',
+            'manage time entries',
+            'approve leave requests',
         ]);
 
         // 8. Manager - Operational management
@@ -251,15 +248,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view documents',
             'add comments',
             'view comments',
-            'clock in',
-            'clock out',
-            'view time entries',
             'manage time entries',
-            'view leave requests',
-            'create leave requests',
-            'edit leave requests',
             'approve leave requests',
-            'reject leave requests',
         ]);
 
         // 9. Client - View only, no materials

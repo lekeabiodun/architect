@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Task;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class TaskPolicy
 {
@@ -129,14 +128,15 @@ class TaskPolicy
     public function inspect(User $user, Task $task): bool
     {
         // Must have inspection permission
-        if (!$user->canInspectTasks()) {
+        if (! $user->canInspectTasks()) {
             return false;
         }
 
-        // Inspector must be assigned to the project
+        // Inspector must be the project's designated inspector or be assigned to it.
         $project = $task->phase->project;
 
         return $user->isSuperAdmin() ||
+            $project->inspector_id === $user->id ||
             $project->users()->where('user_id', $user->id)->exists();
     }
 

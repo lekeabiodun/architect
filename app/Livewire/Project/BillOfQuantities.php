@@ -4,22 +4,34 @@ namespace App\Livewire\Project;
 
 use App\Models\BillOfQuantity;
 use App\Models\Project;
+use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class BillOfQuantities extends Component
 {
     public $project;
+
     public $showModal = false;
+
     public $editingItem = null;
-    
+
     public $item_code = '';
+
     public $description = '';
+
     public $unit = '';
+
     public $quantity = '';
+
     public $requestable_quantity = '';
+
     public $unit_rate = '';
+
     public $category = '';
+
     public $notes = '';
+
     public $order = 0;
 
     protected $rules = [
@@ -27,7 +39,7 @@ class BillOfQuantities extends Component
         'description' => 'required|string|max:255',
         'unit' => 'required|string|max:50',
         'quantity' => 'required|numeric|min:0',
-        'requestable_quantity' => 'required|numeric|min:0',
+        'requestable_quantity' => 'required|numeric|min:0|lte:quantity',
         'unit_rate' => 'required|numeric|min:0',
         'category' => 'nullable|string|max:100',
         'notes' => 'nullable|string|max:1000',
@@ -37,24 +49,26 @@ class BillOfQuantities extends Component
     public function mount($id)
     {
         $this->project = Project::findOrFail($id);
+
+        $this->authorize('viewForProject', [BillOfQuantity::class, $this->project]);
     }
 
     public function render()
     {
         $billOfQuantities = $this->project->billOfQuantities()->orderBy('order')->get();
-        $categories = BillOfQuantity::where('project_id', $this->project->id)
-            ->whereNotNull('category')
-            ->distinct()
-            ->pluck('category');
-        
+        $categories = $billOfQuantities->pluck('category')->filter()->unique()->values();
+
         return view('livewire.project.bill-of-quantities', [
             'billOfQuantities' => $billOfQuantities,
             'categories' => $categories,
+            'canCreate' => auth()->user()->can('create', [BillOfQuantity::class, $this->project]),
         ]);
     }
 
     public function openModal()
     {
+        $this->authorize('create', [BillOfQuantity::class, $this->project]);
+
         $this->resetForm();
         $this->order = $this->project->billOfQuantities()->count() + 1;
         $this->requestable_quantity = 0; // Default to 0, user will set it
@@ -63,8 +77,10 @@ class BillOfQuantities extends Component
 
     public function openEditModal($itemId)
     {
-        $item = BillOfQuantity::findOrFail($itemId);
-        
+        $item = $this->project->billOfQuantities()->findOrFail($itemId);
+
+        $this->authorize('update', $item);
+
         $this->editingItem = $item->id;
         $this->item_code = $item->item_code;
         $this->description = $item->description;
@@ -75,7 +91,7 @@ class BillOfQuantities extends Component
         $this->category = $item->category;
         $this->notes = $item->notes;
         $this->order = $item->order;
-        
+
         $this->showModal = true;
     }
 
@@ -87,6 +103,14 @@ class BillOfQuantities extends Component
 
     public function save()
     {
+        // Authorize against the specific item when editing, or the project when creating.
+        if ($this->editingItem) {
+            $item = $this->project->billOfQuantities()->findOrFail($this->editingItem);
+            $this->authorize('update', $item);
+        } else {
+            $this->authorize('create', [BillOfQuantity::class, $this->project]);
+        }
+
         $this->validate();
 
         $data = [
@@ -102,58 +126,73 @@ class BillOfQuantities extends Component
             'order' => $this->order,
         ];
 
-        if ($this->editingItem) {
-            $item = BillOfQuantity::findOrFail($this->editingItem);
-            $item->update($data);
-        } else {
-            BillOfQuantity::create($data);
-        }
+        DB::transaction(function () use ($data) {
+            if ($this->editingItem) {
+                $this->project->billOfQuantities()->findOrFail($this->editingItem)->update($data);
+            } else {
+                BillOfQuantity::create($data);
+            }
 
-        $this->updateProjectTotal();
+            $this->updateProjectTotal();
+        });
+
         $this->showModal = false;
         $this->resetForm();
-        
-        session()->flash('message', 'Bill of Quantities item saved successfully');
+
+        Flux::toast('Bill of Quantities item saved successfully', variant: 'success');
     }
 
     public function delete($itemId)
     {
-        $item = BillOfQuantity::findOrFail($itemId);
-        $item->delete();
-        $this->updateProjectTotal();
+        $item = $this->project->billOfQuantities()->findOrFail($itemId);
+
+        $this->authorize('delete', $item);
+
+        DB::transaction(function () use ($item) {
+            $item->delete();
+            $this->updateProjectTotal();
+        });
+
+        Flux::toast('Bill of Quantities item deleted successfully', variant: 'success');
     }
 
     public function moveUp($itemId)
     {
-        $item = BillOfQuantity::findOrFail($itemId);
+        $item = $this->project->billOfQuantities()->findOrFail($itemId);
+
+        $this->authorize('update', $item);
+
         $previousItem = $this->project->billOfQuantities()
             ->where('order', '<', $item->order)
             ->orderBy('order', 'desc')
             ->first();
 
         if ($previousItem) {
-            $tempOrder = $item->order;
-            $item->order = $previousItem->order;
-            $previousItem->order = $tempOrder;
-            $item->save();
-            $previousItem->save();
+            DB::transaction(function () use ($item, $previousItem) {
+                [$item->order, $previousItem->order] = [$previousItem->order, $item->order];
+                $item->save();
+                $previousItem->save();
+            });
         }
     }
 
     public function moveDown($itemId)
     {
-        $item = BillOfQuantity::findOrFail($itemId);
+        $item = $this->project->billOfQuantities()->findOrFail($itemId);
+
+        $this->authorize('update', $item);
+
         $nextItem = $this->project->billOfQuantities()
             ->where('order', '>', $item->order)
             ->orderBy('order')
             ->first();
 
         if ($nextItem) {
-            $tempOrder = $item->order;
-            $item->order = $nextItem->order;
-            $nextItem->order = $tempOrder;
-            $item->save();
-            $nextItem->save();
+            DB::transaction(function () use ($item, $nextItem) {
+                [$item->order, $nextItem->order] = [$nextItem->order, $item->order];
+                $item->save();
+                $nextItem->save();
+            });
         }
     }
 

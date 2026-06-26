@@ -19,9 +19,9 @@ class TimeEntryPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Users who can manage time tracking can view all entries
-        // Regular users can only view their own entries
-        return $user->canManageTimeTracking() || $user->hasPermissionTo('view time entries');
+        // Viewing everyone's entries is part of the timesheet-admin capability.
+        // (Users see their own entries through the clock-in screen, not here.)
+        return $user->canManageTimeTracking();
     }
 
     /**

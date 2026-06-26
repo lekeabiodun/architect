@@ -2,51 +2,69 @@
 
 namespace App\Livewire\TimeTracking;
 
+use App\Models\Project;
 use App\Models\TimeEntry;
 use App\Models\User;
-use App\Models\Project;
+use Carbon\Carbon;
+use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Flux\Flux;
-use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 
 class AdminTimesheet extends Component
 {
     use WithPagination;
 
     public $showEditModal = false;
+
     public $showDeleteModal = false;
+
     public $selectedEntry = null;
 
     // Filters
     public $user_filter = '';
+
     public $project_filter = '';
+
     public $status_filter = '';
+
     public $date_range_filter = 'week';
+
     public $custom_start_date = '';
+
     public $custom_end_date = '';
 
     // Edit form
     public $edit_clock_in = '';
+
     public $edit_clock_out = '';
+
     public $edit_break_duration = '';
+
     public $edit_notes = '';
+
     public $edit_project_id = '';
+
     public $edit_task_id = '';
+
     public $edit_reason = '';
 
     // Summary data
     public $totalHours = 0;
+
     public $totalRegularHours = 0;
+
     public $totalOvertimeHours = 0;
+
     public $averageDailyHours = 0;
+
     public $activeUsersCount = 0;
 
     protected $queryString = ['user_filter', 'project_filter', 'status_filter', 'date_range_filter'];
 
     public function mount()
     {
+        $this->authorize('viewAny', TimeEntry::class);
+
         $this->custom_start_date = now()->startOfWeek()->format('Y-m-d');
         $this->custom_end_date = now()->endOfWeek()->format('Y-m-d');
     }
@@ -219,10 +237,10 @@ class AdminTimesheet extends Component
         $entries = TimeEntry::query()
             ->with(['user', 'project', 'task'])
             ->dateRange($this->custom_start_date, $this->custom_end_date)
-            ->when($this->user_filter, fn($q) => $q->where('user_id', $this->user_filter))
-            ->when($this->project_filter, fn($q) => $q->where('project_id', $this->project_filter))
-            ->when($this->status_filter === 'active', fn($q) => $q->active())
-            ->when($this->status_filter === 'completed', fn($q) => $q->whereNotNull('clock_out'))
+            ->when($this->user_filter, fn ($q) => $q->where('user_id', $this->user_filter))
+            ->when($this->project_filter, fn ($q) => $q->where('project_id', $this->project_filter))
+            ->when($this->status_filter === 'active', fn ($q) => $q->active())
+            ->when($this->status_filter === 'completed', fn ($q) => $q->whereNotNull('clock_out'))
             ->latest('clock_in')
             ->get();
 
@@ -245,7 +263,7 @@ class AdminTimesheet extends Component
             ];
         }
 
-        $filename = 'timesheet_' . $this->custom_start_date . '_to_' . $this->custom_end_date . '.csv';
+        $filename = 'timesheet_'.$this->custom_start_date.'_to_'.$this->custom_end_date.'.csv';
 
         $this->dispatch('downloadCsv', [
             'filename' => $filename,
@@ -269,7 +287,7 @@ class AdminTimesheet extends Component
             'edit_notes',
             'edit_project_id',
             'edit_task_id',
-            'edit_reason'
+            'edit_reason',
         ]);
         $this->selectedEntry = null;
     }

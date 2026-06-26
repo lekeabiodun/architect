@@ -323,21 +323,25 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user can manage time tracking (admin functionality)
+     * Check if user can manage time tracking (admin functionality).
+     *
+     * Permission-driven: roles that should manage timesheets are granted
+     * 'manage time entries' in the seeder (super_admin holds all permissions).
      */
     public function canManageTimeTracking(): bool
     {
-        return $this->hasAnyRole(['super_admin', 'director', 'manager', 'project_manager']) ||
-            $this->hasPermissionTo('manage time entries');
+        return $this->hasPermissionTo('manage time entries');
     }
 
     /**
-     * Check if user can approve leave requests
+     * Check if user can approve leave requests.
+     *
+     * Permission-driven: roles that should approve leave are granted
+     * 'approve leave requests' in the seeder (super_admin holds all permissions).
      */
     public function canApproveLeave(): bool
     {
-        return $this->hasAnyRole(['super_admin', 'director', 'manager', 'project_manager']) ||
-            $this->hasPermissionTo('approve leave requests');
+        return $this->hasPermissionTo('approve leave requests');
     }
 
     /**

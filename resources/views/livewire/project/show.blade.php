@@ -6,12 +6,17 @@
                     <flux:button variant="ghost" icon="arrow-left" href="{{ route('projects.index') }}">Back</flux:button>
                     <flux:heading size="lg">{{ $project->name }}</flux:heading>
                 </div>
-                @can('update', $project)
                 <div class="flex items-center gap-4">
-                    <flux:button variant="primary" wire:click="openPhaseModal" icon="plus">Add Phase</flux:button>
-                    <flux:button variant="primary" href="{{ route('projects.bill-of-quantities', $project->id) }}" icon="wrench">Manage BOQ</flux:button>
+                    @if($canManagePhases)
+                        <flux:button variant="primary" wire:click="openPhaseModal" icon="plus">Add Phase</flux:button>
+                    @endif
+                    @if($canViewBoq)
+                        <flux:button variant="primary" href="{{ route('projects.bill-of-quantities', $project->id) }}" icon="wrench">Manage BOQ</flux:button>
+                    @endif
+                    @if($canViewBudget)
+                        <flux:button variant="ghost" href="{{ route('projects.budget', $project->id) }}" icon="currency-dollar">View Budget</flux:button>
+                    @endif
                 </div>
-                @endcan
             </div>
 
             <div class="w-full grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -97,16 +102,18 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $phase->description }}</p>
                                 @endif
                             </div>
-                            @can('update', $project)
+                            @if($canManagePhases)
                             <flux:dropdown align="end">
                                 <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" icon-variant="mini" />
                                 <flux:menu>
                                     <flux:menu.item icon="pencil" wire:click="openEditPhaseModal({{ $phase->id }})">Edit Phase</flux:menu.item>
-                                    <flux:menu.item icon="plus" wire:click="openTaskModal({{ $phase->id }})">Add Task</flux:menu.item>
+                                    @if($canCreateTasks)
+                                        <flux:menu.item icon="plus" wire:click="openTaskModal({{ $phase->id }})">Add Task</flux:menu.item>
+                                    @endif
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deletePhase({{ $phase->id }})" wire:confirm="Delete this phase and all its tasks?">Delete Phase</flux:menu.item>
                                 </flux:menu>
                             </flux:dropdown>
-                            @endcan
+                            @endif
                         </div>
 
                         {{-- Phase Progress --}}
@@ -134,8 +141,8 @@
                                         wire:click="openTaskProgress({{ $task->id }})"
                                     >
                                         {{-- Status Circle (Clickable) --}}
-                                        @can('update', $project)
-                                            <button 
+                                        @can('complete', $task)
+                                            <button
                                                 wire:click.stop="toggleTaskStatus({{ $task->getKey() }})"
                                                 class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110
                                                     {{ $task->status === 'completed' ? 'bg-green-500 border-green-600' : ($task->status === 'in_progress' ? 'bg-blue-500 border-blue-600' : 'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600') }}"
@@ -147,6 +154,17 @@
                                                     <div class="w-2 h-2 bg-white rounded-full"></div>
                                                 @endif
                                             </button>
+                                        @else
+                                            <div 
+                                                class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center
+                                                    {{ $task->status === 'completed' ? 'bg-green-500 border-green-600' : ($task->status === 'in_progress' ? 'bg-blue-500 border-blue-600' : 'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600') }}"
+                                            >
+                                                @if($task->status === 'completed')
+                                                    <flux:icon.check class="w-4 h-4 text-white" />
+                                                @elseif($task->status === 'in_progress')
+                                                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                                                @endif
+                                            </div>
                                         @endcan
 
                                         {{-- Task Details --}}
@@ -206,24 +224,30 @@
                                         </div>
 
                                         {{-- Actions --}}
-                                        @can('update', $project)
+                                        @canany(['update', 'delete'], $task)
                                         <flux:dropdown align="end">
                                             <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" icon-variant="mini" wire:click.stop />
                                             <flux:menu>
-                                                <flux:menu.item icon="pencil" wire:click.stop="openEditTaskModal({{ $task->id }})">Edit</flux:menu.item>
-                                                <flux:menu.item icon="trash" variant="danger" wire:click.stop="deleteTask({{ $task->id }})" wire:confirm="Delete this task?">Delete</flux:menu.item>
+                                                @can('update', $task)
+                                                    <flux:menu.item icon="pencil" wire:click.stop="openEditTaskModal({{ $task->id }})">Edit</flux:menu.item>
+                                                @endcan
+                                                @can('delete', $task)
+                                                    <flux:menu.item icon="trash" variant="danger" wire:click.stop="deleteTask({{ $task->id }})" wire:confirm="Delete this task?">Delete</flux:menu.item>
+                                                @endcan
                                             </flux:menu>
                                         </flux:dropdown>
-                                        @endcan
+                                        @endcanany
                                     </div>
                                 @endforeach
                             </div>
                         @else
                             <div class="text-center py-8 text-gray-500">
                                 <p>No tasks yet</p>
-                                <flux:button size="sm" variant="ghost" wire:click="openTaskModal({{ $phase->id }})" icon="plus" class="mt-2">
-                                    Add First Task
-                                </flux:button>
+                                @if($canCreateTasks)
+                                    <flux:button size="sm" variant="ghost" wire:click="openTaskModal({{ $phase->id }})" icon="plus" class="mt-2">
+                                        Add First Task
+                                    </flux:button>
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -233,7 +257,9 @@
                     <flux:icon.bars-3 class="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <flux:heading size="lg" class="mb-2">No phases yet</flux:heading>
                     <p class="text-gray-500 mb-4">Add phases to organize your project tasks</p>
-                    <flux:button variant="primary" wire:click="openPhaseModal" icon="plus">Add First Phase</flux:button>
+                    @if($canManagePhases)
+                        <flux:button variant="primary" wire:click="openPhaseModal" icon="plus">Add First Phase</flux:button>
+                    @endif
                 </flux:card>
             @endforelse
         </div>

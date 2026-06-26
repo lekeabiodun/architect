@@ -153,15 +153,14 @@ class Project extends Model
 
     public function calculateTotalTaskCosts(): array
     {
-        $estimatedCost = 0;
-        $actualCost = 0;
+        // Aggregate fresh from the DB in a single query so a cached phases/tasks
+        // relation can't produce stale totals (this feeds the persisted actual_cost).
+        $totals = Task::whereHas('phase', fn ($query) => $query->where('project_id', $this->id))
+            ->selectRaw('COALESCE(SUM(estimated_cost), 0) as estimated, COALESCE(SUM(actual_cost), 0) as actual')
+            ->first();
 
-        foreach ($this->phases as $phase) {
-            foreach ($phase->tasks as $task) {
-                $estimatedCost += $task->estimated_cost ?? 0;
-                $actualCost += $task->actual_cost ?? 0;
-            }
-        }
+        $estimatedCost = (float) $totals->estimated;
+        $actualCost = (float) $totals->actual;
 
         return [
             'estimated' => $estimatedCost,

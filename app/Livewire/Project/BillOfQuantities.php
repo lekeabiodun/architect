@@ -32,8 +32,6 @@ class BillOfQuantities extends Component
 
     public $notes = '';
 
-    public $order = 0;
-
     protected $rules = [
         'item_code' => 'nullable|string|max:50',
         'description' => 'required|string|max:255',
@@ -43,7 +41,6 @@ class BillOfQuantities extends Component
         'unit_rate' => 'required|numeric|min:0',
         'category' => 'nullable|string|max:100',
         'notes' => 'nullable|string|max:1000',
-        'order' => 'required|integer|min:0',
     ];
 
     public function mount($id)
@@ -70,7 +67,6 @@ class BillOfQuantities extends Component
         $this->authorize('create', [BillOfQuantity::class, $this->project]);
 
         $this->resetForm();
-        $this->order = $this->project->billOfQuantities()->count() + 1;
         $this->requestable_quantity = 0; // Default to 0, user will set it
         $this->showModal = true;
     }
@@ -90,7 +86,6 @@ class BillOfQuantities extends Component
         $this->unit_rate = $item->unit_rate;
         $this->category = $item->category;
         $this->notes = $item->notes;
-        $this->order = $item->order;
 
         $this->showModal = true;
     }
@@ -123,13 +118,15 @@ class BillOfQuantities extends Component
             'unit_rate' => $this->unit_rate,
             'category' => $this->category,
             'notes' => $this->notes,
-            'order' => $this->order,
         ];
 
         DB::transaction(function () use ($data) {
             if ($this->editingItem) {
+                // Order is managed by moveUp/moveDown, not edited here.
                 $this->project->billOfQuantities()->findOrFail($this->editingItem)->update($data);
             } else {
+                // Auto-assign the next order so values stay unique and gap-tolerant.
+                $data['order'] = (int) $this->project->billOfQuantities()->max('order') + 1;
                 BillOfQuantity::create($data);
             }
 
@@ -214,7 +211,6 @@ class BillOfQuantities extends Component
         $this->unit_rate = '';
         $this->category = '';
         $this->notes = '';
-        $this->order = 0;
         $this->resetErrorBag();
     }
 }

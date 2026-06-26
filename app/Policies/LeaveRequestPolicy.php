@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\LeaveRequest;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class LeaveRequestPolicy
 {
@@ -44,10 +43,9 @@ class LeaveRequestPolicy
      */
     public function create(User $user): bool
     {
-        return true;
-        // All authenticated users can create their own leave requests
-        // except clients who typically don't need leave
-        return !$user->isClient() && $user->hasPermissionTo('create leave requests');
+        // All authenticated staff may submit their own leave requests;
+        // clients don't request leave. Approval is gated separately.
+        return ! $user->isClient();
     }
 
     /**
@@ -100,7 +98,7 @@ class LeaveRequestPolicy
     public function approve(User $user, LeaveRequest $leaveRequest): bool
     {
         // Must be pending to be approved
-        if (!$leaveRequest->isPending()) {
+        if (! $leaveRequest->isPending()) {
             return false;
         }
 
@@ -121,6 +119,18 @@ class LeaveRequestPolicy
     }
 
     /**
+     * Determine whether the user can approve/reject leave requests in general.
+     *
+     * This is the capability check for bulk actions, where there is no single
+     * request to authorize. Per-request rules (pending, not own request) are
+     * still enforced via the approve() ability for each request.
+     */
+    public function approveAny(User $user): bool
+    {
+        return $user->canApproveLeave();
+    }
+
+    /**
      * Determine whether the user can manage leave balances.
      */
     public function manageLeaveBalances(User $user): bool
@@ -133,7 +143,7 @@ class LeaveRequestPolicy
      */
     public function viewLeaveCalendar(User $user): bool
     {
-        // All non-client users can view the leave calendar
-        return !$user->isClient() && $user->hasPermissionTo('view leave calendar');
+        // All non-client users can view the leave calendar.
+        return ! $user->isClient();
     }
 }

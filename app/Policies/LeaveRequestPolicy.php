@@ -19,9 +19,9 @@ class LeaveRequestPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Users who can approve leave can view all requests
-        // Regular users can only view their own requests
-        return $user->canApproveLeave() || $user->hasPermissionTo('view leave requests');
+        // Viewing everyone's requests is part of the leave-approval capability.
+        // (Users see their own requests on the leave-request screen, not here.)
+        return $user->canApproveLeave();
     }
 
     /**

@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\BillOfQuantity;
 use App\Models\Inventory;
 use App\Models\MaterialRequest;
 use App\Models\Project;
 use App\Models\Task;
+use App\Policies\BillOfQuantityPolicy;
 use App\Policies\InventoryPolicy;
 use App\Policies\MaterialRequestPolicy;
 use App\Policies\ProjectPolicy;
@@ -25,6 +27,7 @@ class AuthServiceProvider extends ServiceProvider
         Task::class => TaskPolicy::class,
         MaterialRequest::class => MaterialRequestPolicy::class,
         Inventory::class => InventoryPolicy::class,
+        BillOfQuantity::class => BillOfQuantityPolicy::class,
     ];
 
     /**

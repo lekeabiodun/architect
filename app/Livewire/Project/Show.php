@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Project;
 
+use App\Models\BillOfQuantity;
 use App\Models\Phase;
 use App\Models\Project;
 use App\Models\Task;
@@ -16,63 +17,101 @@ class Show extends Component
     use WithFileUploads;
 
     public $project;
+
     public $showPhaseModal = false;
+
     public $showTaskModal = false;
+
     public $showProgressModal = false;
+
     public $editingPhase = null;
+
     public $editingTask = null;
+
     public $selectedPhase = null;
+
     public $progressTaskId = null;
-    
+
     // Phase form fields
     public $phase_name = '';
+
     public $phase_description = '';
+
     public $phase_order = 0;
+
     public $phase_weight = 0;
+
     public $phase_planned_start_date = '';
+
     public $phase_planned_end_date = '';
-    
+
     // Task form fields
     public $task_name = '';
+
     public $task_description = '';
+
     public $task_order = 0;
+
     public $task_weight = 0;
+
     public $task_planned_start_date = '';
+
     public $task_planned_end_date = '';
+
     public $task_estimated_cost = '';
+
     public $task_estimated_hours = '';
+
     public $task_assigned_to = '';
+
     public $task_predecessor_id = '';
+
     public $progress_comment = '';
+
     public $progress_media = [];
 
     public function mount($id)
     {
         $this->project = Project::with(['phases.tasks.assignedUser', 'manager'])->findOrFail($id);
+
+        // Check if user can view this project
+        $this->authorize('view', $this->project);
     }
 
     public function render()
     {
         // Reload project to get fresh data
         $this->project->load(['phases.tasks.assignedUser', 'manager']);
-        
+
         $users = User::all();
         $availableTasks = collect();
-        
+
         if ($this->selectedPhase) {
             $availableTasks = Task::where('phase_id', $this->selectedPhase)->get();
         }
+
+        $user = auth()->user();
+        $canManagePhases = $user->can('update', $this->project);
+        $canCreateTasks = $user->can('create', Task::class);
+        $canViewBoq = $user->can('viewForProject', [BillOfQuantity::class, $this->project]);
+        $canViewBudget = $user->can('viewBudget', $this->project);
 
         return view('livewire.project.show', [
             'users' => $users,
             'availableTasks' => $availableTasks,
             'progressTask' => $this->progressTask,
+            'canManagePhases' => $canManagePhases,
+            'canCreateTasks' => $canCreateTasks,
+            'canViewBoq' => $canViewBoq,
+            'canViewBudget' => $canViewBudget,
         ]);
     }
 
     // Phase Management
     public function openPhaseModal()
     {
+        $this->authorize('update', $this->project);
+
         $this->resetPhaseForm();
         $this->phase_order = $this->project->phases->count() + 1;
         $this->showPhaseModal = true;
@@ -80,8 +119,10 @@ class Show extends Component
 
     public function openEditPhaseModal($phaseId)
     {
+        $this->authorize('update', $this->project);
+
         $phase = Phase::findOrFail($phaseId);
-        
+
         $this->editingPhase = $phase->id;
         $this->phase_name = $phase->name;
         $this->phase_description = $phase->description ?? '';
@@ -89,12 +130,14 @@ class Show extends Component
         $this->phase_weight = $phase->weight;
         $this->phase_planned_start_date = $phase->planned_start_date?->format('Y-m-d') ?? '';
         $this->phase_planned_end_date = $phase->planned_end_date?->format('Y-m-d') ?? '';
-        
+
         $this->showPhaseModal = true;
     }
 
     public function savePhase()
     {
+        $this->authorize('update', $this->project);
+
         $this->validate([
             'phase_name' => 'required|string|max:255',
             'phase_description' => 'nullable|string',
@@ -133,6 +176,8 @@ class Show extends Component
 
     public function deletePhase($phaseId)
     {
+        $this->authorize('update', $this->project);
+
         $phase = Phase::findOrFail($phaseId);
         $phase->delete();
         $this->project->refresh();
@@ -141,6 +186,8 @@ class Show extends Component
     // Task Management
     public function openTaskModal($phaseId)
     {
+        $this->authorize('create', Task::class);
+
         $this->resetTaskForm();
         $this->selectedPhase = $phaseId;
         $phase = Phase::findOrFail($phaseId);
@@ -151,7 +198,8 @@ class Show extends Component
     public function openEditTaskModal($taskId)
     {
         $task = Task::findOrFail($taskId);
-        
+        $this->authorize('update', $task);
+
         $this->editingTask = $task->id;
         $this->selectedPhase = $task->phase_id;
         $this->task_name = $task->name;
@@ -164,12 +212,20 @@ class Show extends Component
         $this->task_estimated_hours = $task->estimated_hours ?? '';
         $this->task_assigned_to = $task->assigned_to ?? '';
         $this->task_predecessor_id = $task->predecessor_task_id ?? '';
-        
+
         $this->showTaskModal = true;
     }
 
     public function saveTask()
     {
+        // Check authorization based on whether we're creating or editing
+        if ($this->editingTask) {
+            $task = Task::findOrFail($this->editingTask);
+            $this->authorize('update', $task);
+        } else {
+            $this->authorize('create', Task::class);
+        }
+
         $this->validate([
             'task_name' => 'required|string|max:255',
             'task_description' => 'nullable|string',
@@ -212,6 +268,8 @@ class Show extends Component
     public function toggleTaskStatus($taskId)
     {
         $task = Task::findOrFail($taskId);
+        $this->authorize('complete', $task);
+
         $task->toggleStatus();
         $this->project->refresh();
     }
@@ -219,6 +277,8 @@ class Show extends Component
     public function deleteTask($taskId)
     {
         $task = Task::findOrFail($taskId);
+        $this->authorize('delete', $task);
+
         $task->delete();
         $this->project->refresh();
     }
@@ -238,7 +298,7 @@ class Show extends Component
 
     public function saveTaskProgress()
     {
-        if (!$this->progressTaskId) {
+        if (! $this->progressTaskId) {
             return;
         }
 
@@ -247,17 +307,21 @@ class Show extends Component
             'progress_media.*' => 'file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,wmv|max:51200',
         ]);
 
-        if (!$this->progress_comment && empty($this->progress_media)) {
+        if (! $this->progress_comment && empty($this->progress_media)) {
             $this->addError('progress_comment', 'Add a comment or attach at least one media file.');
+
             return;
         }
 
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             $this->addError('progress_comment', 'You must be logged in to add progress updates.');
+
             return;
         }
 
         $task = Task::findOrFail($this->progressTaskId);
+
+        $this->authorize('addMedia', $task);
 
         $mediaFiles = collect($this->progress_media)->map(function ($file) use ($task) {
             $storedPath = $file->store("tasks/{$task->id}/progress", 'public');
@@ -283,7 +347,7 @@ class Show extends Component
 
     public function getProgressTaskProperty()
     {
-        if (!$this->progressTaskId) {
+        if (! $this->progressTaskId) {
             return null;
         }
 

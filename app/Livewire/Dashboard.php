@@ -11,11 +11,13 @@ class Dashboard extends Component
 {
     public function mount()
     {
-        if (Auth::user()->isClient()) {
-            return redirect()->route('projects.index');
-        }
+        $user = Auth::user();
 
-        $this->authorize('viewDashboard', Auth::user());
+        // Roles that cannot view the dashboard are redirected to their own
+        // landing page instead of hitting a 403 on '/' (the login/home route).
+        if (! $user->can('viewDashboard', $user)) {
+            return redirect()->route($user->homeRoute());
+        }
     }
     public function render()
     {

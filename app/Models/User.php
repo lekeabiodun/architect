@@ -177,6 +177,29 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine the landing route name for this user after login.
+     *
+     * Roles that cannot view the main dashboard are sent to the first
+     * section they can actually access, so they never hit a 403 on '/'.
+     */
+    public function homeRoute(): string
+    {
+        if ($this->isClient()) {
+            return 'projects.index';
+        }
+
+        if ($this->isInspector()) {
+            return 'inspector.dashboard';
+        }
+
+        if ($this->isWorker()) {
+            return 'tasks.my-tasks';
+        }
+
+        return 'dashboard';
+    }
+
+    /**
      * Check if user can manage materials/inventory
      */
     public function canManageMaterials(): bool

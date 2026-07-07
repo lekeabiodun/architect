@@ -86,7 +86,7 @@ class Dashboard extends Component
 
         // Get material requests awaiting confirmation
         $pendingMaterials = MaterialRequest::query()
-            ->with(['material', 'project', 'requester', 'disburser'])
+            ->with(['billOfQuantity', 'project', 'requester', 'disburser'])
             ->whereIn('project_id', $projectIds)
             ->where('status', 'disbursed')
             ->latest()

@@ -91,26 +91,26 @@
                             @endif
 
                             <div class="flex gap-2 pt-4 border-t dark:border-gray-700">
-                                <flux:button 
-                                    size="sm" 
-                                    variant="primary"
-                                    wire:click="selectTask({{ $task->id }})"
-                                    x-data
-                                    @click="$dispatch('open-modal', 'approve-modal-{{ $task->id }}')"
-                                >
-                                    <flux:icon.check class="w-4 h-4 mr-1" />
-                                    Pass Inspection
-                                </flux:button>
-                                <flux:button 
-                                    size="sm" 
-                                    variant="danger"
-                                    wire:click="selectTask({{ $task->id }})"
-                                    x-data
-                                    @click="$dispatch('open-modal', 'fail-modal-{{ $task->id }}')"
-                                >
-                                    <flux:icon.x-mark class="w-4 h-4 mr-1" />
-                                    Fail Inspection
-                                </flux:button>
+                                <flux:modal.trigger name="approve-modal-{{ $task->id }}">
+                                    <flux:button
+                                        size="sm"
+                                        variant="primary"
+                                        wire:click="selectTask({{ $task->id }})"
+                                    >
+                                        <flux:icon.check class="w-4 h-4 mr-1" />
+                                        Pass Inspection
+                                    </flux:button>
+                                </flux:modal.trigger>
+                                <flux:modal.trigger name="fail-modal-{{ $task->id }}">
+                                    <flux:button
+                                        size="sm"
+                                        variant="danger"
+                                        wire:click="selectTask({{ $task->id }})"
+                                    >
+                                        <flux:icon.x-mark class="w-4 h-4 mr-1" />
+                                        Fail Inspection
+                                    </flux:button>
+                                </flux:modal.trigger>
                             </div>
                         </div>
 
@@ -185,7 +185,7 @@
                                 <div class="flex items-start justify-between">
                                     <div>
                                         <div class="flex items-center gap-3 mb-1">
-                                            <flux:heading size="md">{{ $request->material->name }}</flux:heading>
+                                            <flux:heading size="md">{{ $request->billOfQuantity?->description ?? 'Material' }}</flux:heading>
                                             <flux:badge color="blue">Awaiting Confirmation</flux:badge>
                                         </div>
                                         <p class="text-sm text-gray-600 dark:text-gray-400">{{ $request->project->name }}</p>
@@ -195,7 +195,7 @@
                                 <div class="grid grid-cols-3 gap-4">
                                     <div>
                                         <div class="text-xs text-gray-500">Disbursed Quantity</div>
-                                        <div class="font-medium">{{ number_format($request->disbursed_quantity, 2) }} {{ $request->material->unit }}</div>
+                                        <div class="font-medium">{{ number_format($request->disbursed_quantity, 2) }} {{ $request->billOfQuantity?->unit }}</div>
                                     </div>
                                     <div>
                                         <div class="text-xs text-gray-500">Disbursed By</div>
@@ -207,23 +207,23 @@
                                     </div>
                                 </div>
 
-                                <flux:button 
-                                    size="sm" 
-                                    variant="primary"
-                                    x-data
-                                    @click="$dispatch('open-modal', 'confirm-material-{{ $request->id }}')"
-                                >
-                                    <flux:icon.check-badge class="w-4 h-4 mr-1" />
-                                    Confirm Delivery
-                                </flux:button>
+                                <flux:modal.trigger name="confirm-material-{{ $request->id }}">
+                                    <flux:button
+                                        size="sm"
+                                        variant="primary"
+                                    >
+                                        <flux:icon.check-badge class="w-4 h-4 mr-1" />
+                                        Confirm Delivery
+                                    </flux:button>
+                                </flux:modal.trigger>
                             </div>
 
                             <flux:modal name="confirm-material-{{ $request->id }}" class="md:w-[500px]">
                                 <div class="space-y-4">
                                     <flux:heading size="lg">Confirm Material Delivery</flux:heading>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">
-                                        Material: <strong>{{ $request->material->name }}</strong><br>
-                                        Quantity: <strong>{{ number_format($request->disbursed_quantity, 2) }} {{ $request->material->unit }}</strong>
+                                        Material: <strong>{{ $request->billOfQuantity?->description ?? 'Material' }}</strong><br>
+                                        Quantity: <strong>{{ number_format($request->disbursed_quantity, 2) }} {{ $request->billOfQuantity?->unit }}</strong>
                                     </p>
                                     <flux:textarea 
                                         wire:model="inspection_feedback" 

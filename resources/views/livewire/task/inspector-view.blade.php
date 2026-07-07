@@ -168,49 +168,49 @@
                         {{-- Action Buttons --}}
                         <div class="flex gap-2 pt-4 border-t dark:border-gray-700">
                             @if($task->status === 'completed' && in_array($task->inspection_status, ['pending', 're_inspection', null]))
-                                <flux:button 
-                                    size="sm" 
-                                    variant="filled"
-                                    x-data
-                                    @click="$dispatch('open-modal', 'inspect-modal-{{ $task->id }}')"
-                                    wire:click="selectTask({{ $task->id }})"
-                                >
-                                    <flux:icon.clipboard-document-check class="w-4 h-4 mr-1" />
-                                    Inspect Task
-                                </flux:button>
+                                <flux:modal.trigger name="inspect-modal-{{ $task->id }}">
+                                    <flux:button
+                                        size="sm"
+                                        variant="filled"
+                                        wire:click="selectTask({{ $task->id }})"
+                                    >
+                                        <flux:icon.clipboard-document-check class="w-4 h-4 mr-1" />
+                                        Inspect Task
+                                    </flux:button>
+                                </flux:modal.trigger>
                             @endif
 
-                            <flux:button 
-                                size="sm" 
-                                variant="ghost"
-                                x-data
-                                @click="$dispatch('open-modal', 'status-modal-{{ $task->id }}')"
-                            >
-                                <flux:icon.arrow-path class="w-4 h-4 mr-1" />
-                                Change Status
-                            </flux:button>
+                            <flux:modal.trigger name="status-modal-{{ $task->id }}">
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                >
+                                    <flux:icon.arrow-path class="w-4 h-4 mr-1" />
+                                    Change Status
+                                </flux:button>
+                            </flux:modal.trigger>
 
-                            <flux:button 
-                                size="sm" 
-                                variant="ghost"
-                                wire:click="selectTask({{ $task->id }})"
-                                x-data
-                                @click="$dispatch('open-modal', 'comment-modal-{{ $task->id }}')"
-                            >
-                                <flux:icon.chat-bubble-left class="w-4 h-4 mr-1" />
-                                Add Comment
-                            </flux:button>
+                            <flux:modal.trigger name="comment-modal-{{ $task->id }}">
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    wire:click="selectTask({{ $task->id }})"
+                                >
+                                    <flux:icon.chat-bubble-left class="w-4 h-4 mr-1" />
+                                    Add Comment
+                                </flux:button>
+                            </flux:modal.trigger>
 
-                            <flux:button 
-                                size="sm" 
-                                variant="ghost"
-                                wire:click="selectTask({{ $task->id }})"
-                                x-data
-                                @click="$dispatch('open-modal', 'details-modal-{{ $task->id }}')"
-                            >
-                                <flux:icon.information-circle class="w-4 h-4 mr-1" />
-                                View Details
-                            </flux:button>
+                            <flux:modal.trigger name="details-modal-{{ $task->id }}">
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    wire:click="selectTask({{ $task->id }})"
+                                >
+                                    <flux:icon.information-circle class="w-4 h-4 mr-1" />
+                                    View Details
+                                </flux:button>
+                            </flux:modal.trigger>
                         </div>
                     </div>
 

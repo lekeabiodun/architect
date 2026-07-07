@@ -87,7 +87,7 @@ class Index extends Component
 
     public function openCreateModal()
     {
-        $this->resetForm();
+        $this->resetCreateForm();
         $this->showCreateModal = true;
     }
 
@@ -124,7 +124,7 @@ class Index extends Component
         ]);
 
         $this->showCreateModal = false;
-        $this->resetForm();
+        $this->resetCreateForm();
 
         session()->flash('message', 'Team member added successfully!');
     }
@@ -160,7 +160,7 @@ class Index extends Component
         $user->update($data);
 
         $this->showEditModal = false;
-        $this->resetForm();
+        $this->resetCreateForm();
 
         session()->flash('message', 'Team member updated successfully!');
     }

@@ -3,9 +3,9 @@
         <div class="w-full space-y-4">
             <div class="flex items-center justify-between">
                 <flux:heading size="lg">Team Members</flux:heading>
-                @if(auth()->user()->isProjectManager())
+                @can('manageTeamMembers', auth()->user())
                     <flux:button variant="primary" wire:click="openCreateModal" icon="plus">Add Team Member</flux:button>
-                @endif
+                @endcan
             </div>
         </div>
     </flux:header>
@@ -173,9 +173,9 @@
                     <flux:icon.user-group class="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <flux:heading size="lg" class="mb-2">No team members found</flux:heading>
                     <p class="text-gray-500 mb-4">Get started by adding your first team member</p>
-                    @if(auth()->user()->isProjectManager())
+                    @can('manageTeamMembers', auth()->user())
                         <flux:button variant="primary" wire:click="openCreateModal" icon="plus">Add Team Member</flux:button>
-                    @endif
+                    @endcan
                 </div>
             @endif
         </flux:card>

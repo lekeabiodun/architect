@@ -121,10 +121,12 @@
                             </flux:badge>
                             
                             <div class="flex items-center gap-4 text-sm text-gray-500">
-                                <div class="flex items-center gap-1">
-                                    <flux:icon.currency-dollar class="w-4 h-4" />
-                                    <span>{{ $project->formatCurrency($project->estimated_budget ?? 0, 0) }}</span>
-                                </div>
+                                @unless(auth()->user()->isClient())
+                                    <div class="flex items-center gap-1">
+                                        <flux:icon.currency-dollar class="w-4 h-4" />
+                                        <span>{{ $project->formatCurrency($project->estimated_budget ?? 0, 0) }}</span>
+                                    </div>
+                                @endunless
                                 <div class="flex items-center gap-2">
                                     <flux:icon.bars-3 class="w-4 h-4" />
                                     <span>{{ $project->phases->count() }} phases</span>

@@ -40,10 +40,12 @@
                     <div class="text-sm text-gray-500 dark:text-gray-400">Overall Progress</div>
                     <div class="font-semibold">{{ number_format($project->overall_progress, 1) }}%</div>
                 </flux:card>
-                <flux:card>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">Budget</div>
-                    <div class="font-semibold">{{ $project->formatCurrency($project->estimated_budget ?? 0, 0) }}</div>
-                </flux:card>
+                @unless(auth()->user()->isClient())
+                    <flux:card>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Budget</div>
+                        <div class="font-semibold">{{ $project->formatCurrency($project->estimated_budget ?? 0, 0) }}</div>
+                    </flux:card>
+                @endunless
             </div>
         </div>
     </flux:header>
@@ -187,18 +189,20 @@
                                                         <span>{{ $task->assignedUser->name }}</span>
                                                     </div>
                                                 @endif
-                                                @if($task->estimated_cost)
-                                                    <div class="flex items-center gap-1">
-                                                        <flux:icon.currency-dollar class="w-3 h-3" />
-                                                        <span>{{ $project->formatCurrency($task->estimated_cost, 0) }}</span>
-                                                    </div>
-                                                @endif
-                                                @if($task->estimated_hours)
-                                                    <div class="flex items-center gap-1">
-                                                        <flux:icon.clock class="w-3 h-3" />
-                                                        <span>{{ $task->estimated_hours }}h</span>
-                                                    </div>
-                                                @endif
+                                                @unless(auth()->user()->isClient())
+                                                    @if($task->estimated_cost)
+                                                        <div class="flex items-center gap-1">
+                                                            <flux:icon.currency-dollar class="w-3 h-3" />
+                                                            <span>{{ $project->formatCurrency($task->estimated_cost, 0) }}</span>
+                                                        </div>
+                                                    @endif
+                                                    @if($task->estimated_hours)
+                                                        <div class="flex items-center gap-1">
+                                                            <flux:icon.clock class="w-3 h-3" />
+                                                            <span>{{ $task->estimated_hours }}h</span>
+                                                        </div>
+                                                    @endif
+                                                @endunless
 
                                                 @if($task->planned_start_date)
                                                     <div class="flex items-center gap-1">

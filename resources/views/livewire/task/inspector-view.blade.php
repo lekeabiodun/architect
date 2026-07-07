@@ -97,10 +97,12 @@
                                 <div class="text-xs text-gray-500">Actual End</div>
                                 <div class="font-medium">{{ $task->actual_end_date?->format('M d, Y') ?? 'N/A' }}</div>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-500">Estimated Hours</div>
-                                <div class="font-medium">{{ $task->estimated_hours ?? 'N/A' }}h</div>
-                            </div>
+                            @unless(auth()->user()->isClient())
+                                <div>
+                                    <div class="text-xs text-gray-500">Estimated Hours</div>
+                                    <div class="font-medium">{{ $task->estimated_hours ?? 'N/A' }}h</div>
+                                </div>
+                            @endunless
                         </div>
 
                         @if($task->description)
@@ -361,18 +363,20 @@
                                     <div class="text-xs text-gray-500">Assigned To</div>
                                     <div class="font-medium">{{ $task->assignedUser?->name ?? 'Unassigned' }}</div>
                                 </div>
-                                <div>
-                                    <div class="text-xs text-gray-500">Estimated Cost</div>
-                                    <div class="font-medium">${{ number_format($task->estimated_cost ?? 0, 0) }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-gray-500">Estimated Hours</div>
-                                    <div class="font-medium">{{ $task->estimated_hours ?? 'N/A' }}h</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-gray-500">Actual Hours</div>
-                                    <div class="font-medium">{{ $task->actual_hours ?? 'N/A' }}h</div>
-                                </div>
+                                @unless(auth()->user()->isClient())
+                                    <div>
+                                        <div class="text-xs text-gray-500">Estimated Cost</div>
+                                        <div class="font-medium">${{ number_format($task->estimated_cost ?? 0, 0) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Estimated Hours</div>
+                                        <div class="font-medium">{{ $task->estimated_hours ?? 'N/A' }}h</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Actual Hours</div>
+                                        <div class="font-medium">{{ $task->actual_hours ?? 'N/A' }}h</div>
+                                    </div>
+                                @endunless
                             </div>
 
                             @if($task->description)
